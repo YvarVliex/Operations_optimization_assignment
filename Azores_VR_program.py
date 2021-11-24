@@ -24,10 +24,12 @@ class Azores_VR:
         self.df_cost = self.excel_data_obtainer(self.filename, "Cost_sheet", 0, 2, "A,E:H").set_index("Aircraft type")
                 
         self.df_deliv = self.excel_data_obtainer(data_sheet, "Demand Table", 0, 2, "B,D:M").drop(0).set_index("Start").astype('float64').round(0)
-        self.df_deliv = self.df_deliv.reindex(self.df_deliv.columns[:-1]).fillna(0).copy()
+        # self.df_deliv = self.df_deliv.reindex(self.df_deliv.columns[:-1]).fillna(0).copy()
+        self.df_deliv.iloc[0,0] = 0
                 
         self.df_pickup = self.excel_data_obtainer(data_sheet, "Demand Table", 8, 19, "B,D").set_index("End").round(0).T
-        self.df_pickup = self.df_pickup.reindex(self.df_deliv.columns[:-1]).fillna(0).copy()
+        # self.df_pickup = self.df_pickup.reindex(self.df_deliv.columns[:-1]).fillna(0).copy()
+        self.df_pickup.iloc[0,0] = 0
         
         self.df_distance_2 = self.df_distance.reindex(self.df_deliv.columns[:-1], columns=self.df_deliv.columns[:-1]).copy()
         
@@ -92,16 +94,26 @@ class Azores_VR:
     
     def add_constraints(self):
         #when this func is called all constraints will be added
-        self.practical_constr()
+        # self.practical_constr()
         self.pick_deliv_constr()
-        self.subtour_elim_constr()
+        # self.subtour_elim_constr()
+        
+        self.AZmodel.update()
     
     
     def practical_constr(self):
         return None
     
     def pick_deliv_constr(self):
-        return None
+        
+        for j in self.n_islands:
+            self.AZmodel.addConstr(self.P_var[0,j], gb.GRB.EQUAL, 0)
+        
+        for i in self.n_islands:
+            self.AZmodel.addConstr(self.P_var[i,0], gb.GRB.EQUAL, 0)
+            
+        self.AZmodel.update()
+        
     
     def subtour_elim_constr(self):
         return None
@@ -109,10 +121,11 @@ class Azores_VR:
     def get_solved_model(self):
         self.AZmodel.optimize()
         self.status = self.AZmodel.status
+        self.objectval = self.AZmodel.objval
         
         #Write code to obtain plotting variables
         self.links = []
-        for variable in self.AZmodel.get_vars():
+        for variable in self.AZmodel.getVars():
             if "x" in variable.varName and variable.getAttr("x")>= 1:
                 node_i, node_j, ac_t, _ = self.x_name[variable.varName]
                 self.links.append((node_i,node_j), ac_t,variable.getAttr("x"))  #nodes that the link connect, which ac if flying, value of x how often it is flying
@@ -148,10 +161,12 @@ if __name__ == '__main__':
     azor.get_all_req_val()
     azor.initialise_model()
     
-    
+    azor.add_constraints()
+    azor.get_solved_model()
     # print(azor.n_name)
     # azor.plot_start_map()
-    
+    print(f"Status = {azor.status}")
+    print(f"Objective value = {azor.objectval}")
     end_t = time.time()
     
     print(f"Runtime = {end_t-start_t}")
