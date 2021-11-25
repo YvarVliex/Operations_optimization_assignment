@@ -159,10 +159,13 @@ class Azores_VR:
         # Offset determines the distance between the node and the text, ideally not too large
         islandsnames = []
         offset = 0.03
-        for name in self.n_name.values():
-            islandsnames.append(name)
-        for i in range(len(islandsnames)):
-            axs.text(x[i]+offset,y[i]+offset,islandsnames[i], c='black')
+        # for name in self.n_name.values():
+        #     islandsnames.append(name)
+        # for i in range(len(islandsnames)):
+        #     axs.text(x[i]+offset,y[i]+offset,islandsnames[i], c='black')
+        
+        for i, name in enumerate(self.n_name.values()):
+            axs.text(x[i]+offset,y[i]+offset,name, c='black')
 
         axs.set_xlabel("Longitude $[\deg]$")
         axs.set_ylabel("Latitude $[\deg]$")
@@ -196,12 +199,14 @@ class Azores_VR:
         
         # Get list with island names in strings and print the names with the nodes
         # Offset determines the distance between the node and the text, ideally not too large
-        islandsnames = []
+        # islandsnames = []
         offset = 0.03
-        for name in self.n_name.values():
-            islandsnames.append(name)
-        for i in range(len(islandsnames)):
-            axs.text(x[i]+offset,y[i]+offset,islandsnames[i], c='black')
+        # for name in self.n_name.values():
+        #     islandsnames.append(name)
+        # for i in range(len(islandsnames)):
+        #     axs.text(x[i]+offset,y[i]+offset,islandsnames[i], c='black')
+        for i, name in enumerate(self.n_name.values()):
+            axs.text(x[i]+offset,y[i]+offset,name, c='black')
         
         # For each part of the journey (from index i to i+1 in self.flight_route), plot the line from lat,long[i] to lat,long[i+1]
         for i in range(len(self.flight_route)-1):
