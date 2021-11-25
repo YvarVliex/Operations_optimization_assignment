@@ -106,7 +106,7 @@ class Azores_VR:
     
     def add_constraints(self):
         #when this func is called all constraints will be added
-        # self.practical_constr()
+        self.practical_constr()
         self.pick_deliv_constr()
         # self.subtour_elim_constr()
         
@@ -114,7 +114,36 @@ class Azores_VR:
     
     
     def practical_constr(self):
-        return None
+        
+        # sum Xij >= 1
+        for i in self.n_islands:
+            temp_val = 0
+            for j in self.n_islands:
+                for t in range(len(self.t_dct)):
+                    for k in range(self.t_dct[t]):
+                        temp_val += self.x_var[(i,j,t,k)]
+            self.AZmodel.addConstr(temp_val, gb.GRB.GREATER_EQUAL, 1)
+        
+        # sum Xji >= 1
+        for i in self.n_islands:
+            temp_val = 0
+            for j in self.n_islands:
+                for t in range(len(self.t_dct)):
+                    for k in range(self.t_dct[t]):
+                        temp_val += self.x_var[(j,i,t,k)]
+            self.AZmodel.addConstr(temp_val, gb.GRB.GREATER_EQUAL, 1)
+            
+        #Q400 cannot land a corvo
+        constr_t = 1
+        j_corvo = 1
+        temp_xcorvo = 0
+        for i in self.n_islands:
+            for k in range(self.t_dct[constr_t]):
+                temp_xcorvo += self.x_var[(i,j_corvo,constr_t,k)]
+        self.AZmodel.addConstr(temp_xcorvo, gb.GRB.EQUAL, 0)    
+                
+        
+        self.AZmodel.update()
     
     def pick_deliv_constr(self):
         
@@ -143,7 +172,7 @@ class Azores_VR:
         for variable in self.AZmodel.getVars():
             if "x" in variable.varName and variable.getAttr("x")>= 1:
                 node_i, node_j, ac_t, _ = self.x_name[variable.varName]
-                self.links.append((node_i,node_j), ac_t,variable.getAttr("x"))  #nodes that the link connect, which ac if flying, value of x how often it is flying
+                self.links.append(((node_i,node_j), ac_t,variable.getAttr("x"))) #nodes that the link connect, which ac if flying, value of x how often it is flying
                 
                 
         
