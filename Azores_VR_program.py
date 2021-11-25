@@ -129,6 +129,7 @@ class Azores_VR:
         self.practical_constr()
         self.pick_deliv_constr()
         # self.subtour_elim_constr()
+        self.time_constr()
         
         self.AZmodel.update()
     
@@ -142,7 +143,7 @@ class Azores_VR:
                 for t in range(len(self.t_dct)):
                     for k in range(self.t_dct[t]):
                         temp_val += self.x_var[(i,j,t,k)]
-            self.AZmodel.addConstr(temp_val, gb.GRB.GREATER_EQUAL, 1)
+            self.AZmodel.addLConstr(temp_val, gb.GRB.GREATER_EQUAL, 1)
         
         # sum Xji >= 1
         for i in self.n_islands:
@@ -151,7 +152,7 @@ class Azores_VR:
                 for t in range(len(self.t_dct)):
                     for k in range(self.t_dct[t]):
                         temp_val += self.x_var[(j,i,t,k)]
-            self.AZmodel.addConstr(temp_val, gb.GRB.GREATER_EQUAL, 1)
+            self.AZmodel.addLConstr(temp_val, gb.GRB.GREATER_EQUAL, 1)
             
         #Q400 cannot land a corvo
         constr_t = 1
@@ -160,7 +161,7 @@ class Azores_VR:
         for i in self.n_islands:
             for k in range(self.t_dct[constr_t]):
                 temp_xcorvo += self.x_var[(i,j_corvo,constr_t,k)]
-        self.AZmodel.addConstr(temp_xcorvo, gb.GRB.EQUAL, 0)    
+        self.AZmodel.addLConstr(temp_xcorvo, gb.GRB.EQUAL, 0)    
                 
         
         self.AZmodel.update()
@@ -169,11 +170,11 @@ class Azores_VR:
         
         # Constraint on the pickups: there are no pickups on the flight from the depot to any island
         for j in self.n_islands:
-            self.AZmodel.addConstr(self.P_var[0,j], gb.GRB.EQUAL, 0)
+            self.AZmodel.addLConstr(self.P_var[0,j], gb.GRB.EQUAL, 0)
         
         # Constraint on the deliveries: there are no deliveries on the flight from any island to the depot
         for i in self.n_islands:
-            self.AZmodel.addConstr(self.D_var[i,0], gb.GRB.EQUAL, 0)
+            self.AZmodel.addLConstr(self.D_var[i,0], gb.GRB.EQUAL, 0)
             
         self.AZmodel.update()
         
@@ -184,28 +185,50 @@ class Azores_VR:
         for i in self.n_islands:
             for j in self.n_islands:
                 q_j = self.df_deliv.iloc[0,j]
-                self.AZmodel.addConstr(self.D_var[i,j] - q_j, gb.GRB.EQUAL, self.D_var[j,i])
+                self.AZmodel.addLConstr(self.D_var[i,j] - q_j, gb.GRB.EQUAL, self.D_var[j,i])
 
         #subtour elimination constraint 2
         for i in self.n_islands:
             for j in self.n_islands:
                 b_j = self.df_deliv.iloc[0, j]
-                self.AZmodel.addConstr(self.P_var[i,j] + b_j, gb.GRB.EQUAL, self.P_var[j,i])
+                self.AZmodel.addLConstr(self.P_var[i,j] + b_j, gb.GRB.EQUAL, self.P_var[j,i])
+        
+        self.AZmodel.update()
+        
+    def time_constr(self):
+        for t in range(len(self.t_dct)):
+            for k in range(self.t_dct[t]):
+                temp_val = 0
+                for i in self.n_islands:
+                    for j in self.n_islands:
+                        temp_val += self.x_var[(j,i,t,k)]*self.time_df_dct[t].iloc[i,j]
+                self.AZmodel.addLConstr(temp_val, gb.GRB.LESS_EQUAL, 7*24*60)
+        
+        self.AZmodel.update()
 
 
     # Function that will solve the model using Gurobi solver                
     def get_solved_model(self):
         self.AZmodel.optimize()
         self.status = self.AZmodel.status
-        self.objectval = self.AZmodel.objval
-        
-        #Write code to obtain plotting variables
-        self.links = []
-        for variable in self.AZmodel.getVars():
-            if "x" in variable.varName and variable.getAttr("x")>= 1:
-                node_i, node_j, ac_t, _ = self.x_name[variable.varName]
-                self.links.append(((node_i,node_j), ac_t,variable.getAttr("x"))) #nodes that the link connect, which ac if flying, value of x how often it is flying
+        print(self.status)
+        # self.objectval = self.AZmodel.objval
+        if self.status == gb.GRB.Status.OPTIMAL:
+            self.objectval = self.AZmodel.objval
+            # print('***** RESULTS ******')
+            # print('\nObjective Function Value: \t %g' % self.objectval)
+            #Write code to obtain plotting variables
+            self.links = []
+            for variable in self.AZmodel.getVars():
+                if "x" in variable.varName and variable.getAttr("x")>= 1:
+                    node_i, node_j, ac_t, ac_k = self.x_name[variable.varName]
+                    self.links.append(((node_i,node_j), ac_t, ac_k, variable.getAttr("x"))) #nodes that the link connect, which ac if flying, value of x how often it is flying
                 
+        
+        elif self.status != gb.GRB.Status.INF_OR_UNBD and self.status == gb.GRB.Status.INFEASIBLE:
+            self.AZmodel.computeIIS()
+        
+        
                 
         
     # Function that plots the longitude,latitude of each of the nodes (islands)
@@ -218,7 +241,7 @@ class Azores_VR:
         
         # Get list with island names in strings and print the names with the nodes
         # Offset determines the distance between the node and the text, ideally not too large
-        islandsnames = []
+        # islandsnames = []
         offset = 0.05
         # for name in self.n_name.values():
         #     islandsnames.append(name)
@@ -307,11 +330,11 @@ if __name__ == '__main__':
     
     azor.add_constraints()
     azor.get_solved_model()
-    print(azor.n_name)
+    # print(azor.n_name)
     # azor.plot_start_map()
     # azor.plot_end_map()
-    print(f"Status = {azor.status}")
-    print(f"Objective value = {azor.objectval}")
+    # print(f"Status = {azor.status}")
+    # print(f"Objective value = {azor.objectval}")
     end_t = time.time()
     
     print(f"Runtime = {end_t-start_t}")
