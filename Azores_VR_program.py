@@ -152,9 +152,23 @@ class Azores_VR:
                 for t in range(len(self.t_dct)):
                     for k in range(self.t_dct[t]):
                         temp_val += self.x_var[(j,i,t,k)]
+
             self.AZmodel.addLConstr(temp_val, gb.GRB.GREATER_EQUAL, 1)
             
         #Q400 cannot land a corvo
+        # aircraft that arrives must also leave (constraint 2.5)
+        for i in self.n_islands:
+            temp_val_1 = 0  # for i_h
+            temp_val_2 = 0  # for h_j
+            for j in self.n_islands:
+                for t in range(len(self.t_dct)):
+                    for k in range(self.t_dct[t]):
+                        for h in self.n_islands:
+                            temp_val_1 += self.x_var[(i,h,t,k)]
+                            temp_val_2 += self.x_var[(h,j,t,k)]
+            self.AZmodel.addConstr(temp_val_1 - temp_val_2, gb.GRB.EQUAL, 0)
+
+        # Q400 cannot land a corvo
         constr_t = 1
         j_corvo = 1
         temp_xcorvo = 0
