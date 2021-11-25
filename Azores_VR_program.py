@@ -139,23 +139,32 @@ class Azores_VR:
     def practical_constr(self):
         
         # sum Xij >= 1
-        for i in self.n_islands:
-            temp_val = 0
-            for j in self.n_islands:
-                for t in range(len(self.t_dct)):
-                    for k in range(self.t_dct[t]):
-                        temp_val += self.x_var[(i,j,t,k)]
-            self.AZmodel.addLConstr(temp_val >= 1)
+        # for i in self.n_islands:
+        #     temp_val = 0
+        #     for j in self.n_islands:
+        #         for t in range(len(self.t_dct)):
+        #             for k in range(self.t_dct[t]):
+        #                 temp_val += self.x_var[(i,j,t,k)]
+        #     self.AZmodel.addLConstr(temp_val >= 1)
+        
+        for t in range(len(self.t_dct)):
+            for k in range(self.t_dct[t]):
+                for i in self.n_islands:
+                    self.AZmodel.addLConstr(gb.quicksum(self.x_var[i,j,t,k] for j in self.n_islands), gb.GRB.GREATER_EQUAL, 1)
         
         # sum Xji >= 1
-        for i in self.n_islands:
-            temp_val = 0
-            for j in self.n_islands:
-                for t in range(len(self.t_dct)):
-                    for k in range(self.t_dct[t]):
-                        temp_val += self.x_var[(j,i,t,k)]
+        # for i in self.n_islands:
+        #     temp_val = 0
+        #     for j in self.n_islands:
+        #         for t in range(len(self.t_dct)):
+        #             for k in range(self.t_dct[t]):
+        #                 temp_val += self.x_var[(j,i,t,k)]
 
-            self.AZmodel.addLConstr(temp_val, gb.GRB.GREATER_EQUAL, 1)
+        #     self.AZmodel.addLConstr(temp_val, gb.GRB.GREATER_EQUAL, 1)
+        for t in range(len(self.t_dct)):
+            for k in range(self.t_dct[t]):
+                for j in self.n_islands:
+                    self.AZmodel.addLConstr(gb.quicksum(self.x_var[j,i,t,k] for i in self.n_islands), gb.GRB.GREATER_EQUAL, 1)
 
 
         # aircraft that arrives must also leave (constraint 2.5)
@@ -165,15 +174,19 @@ class Azores_VR:
                     self.AZmodel.addConstr(gb.quicksum(self.x_var[i,h,t,k] for i in self.n_islands), gb.GRB.EQUAL, gb.quicksum(self.x_var[h,j,t,k] for j in self.n_islands))
 
 
-        # Q400 cannot land a corvo
+        # Q400 cannot land a corvo (eq 2.6)
         constr_t = 1
         j_corvo = 1
-        temp_xcorvo = 0
-        for i in self.n_islands:
-            for k in range(self.t_dct[constr_t]):
-                temp_xcorvo += self.x_var[(i,j_corvo,constr_t,k)]
-        self.AZmodel.addLConstr(temp_xcorvo, gb.GRB.EQUAL, 0)    
+        # temp_xcorvo = 0
+        # for i in self.n_islands:
+        #     for k in range(self.t_dct[constr_t]):
+        #         temp_xcorvo += self.x_var[(i,j_corvo,constr_t,k)]
+        # self.AZmodel.addLConstr(temp_xcorvo, gb.GRB.EQUAL, 0)    
+        for k in range(self.t_dct[constr_t]):
+            self.AZmodel.addLConstr(gb.quicksum(self.x_var[i,j_corvo,constr_t,k] for i in self.n_islands), gb.GRB.EQUAL, 0)
                 
+        
+        self.AZmodel.update()
         
         self.AZmodel.update()
     
@@ -210,11 +223,9 @@ class Azores_VR:
         for t in range(len(self.t_dct)):
             for k in range(self.t_dct[t]):
                 temp_val = 0
-                for i in self.n_islands:
-                    for j in self.n_islands:
-                        temp_val += self.x_var[(j,i,t,k)]*self.time_df_dct[t].iloc[i,j]
-                self.AZmodel.addLConstr(temp_val, gb.GRB.LESS_EQUAL, 7*24*60)
-        
+                for i in self.n_islands:                
+                    temp_val += gb.quicksum(self.x_var[i,j,t,k]*self.time_df_dct[t].iloc[i,j] for j in self.n_islands)
+                self.AZmodel.addLConstr(temp_val, gb.GRB.LESS_EQUAL, 7*24*60)        
         self.AZmodel.update()
 
 
