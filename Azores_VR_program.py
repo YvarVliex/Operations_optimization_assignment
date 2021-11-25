@@ -2,7 +2,7 @@
 """
 Created on Sun Nov 21 16:41:38 2021
 
-@author: Nils de Krom
+@authors: Nils de Krom, Maarten Beltman
 """
 
 import gurobipy as gb
@@ -152,20 +152,83 @@ class Azores_VR:
         x = self.df_coordinates["x"]
         y = self.df_coordinates["y"]
         fig, axs = plt.subplots()
-        axs.scatter(x[0], y[0], c = "r", marker = "+")
+        axs.scatter(x[0], y[0], c = "r", marker = "o")
         axs.scatter(x[1:], y[1:], c = "orange", marker = "s")
+        
+        # Get list with island names in strings and print the names with the nodes
+        # Offset determines the distance between the node and the text, ideally not too large
+        islandsnames = []
+        offset = 0.03
+        for name in self.n_name.values():
+            islandsnames.append(name)
+        for i in range(len(islandsnames)):
+            axs.text(x[i]+offset,y[i]+offset,islandsnames[i], c='black')
+
         axs.set_xlabel("Longitude $[\deg]$")
         axs.set_ylabel("Latitude $[\deg]$")
         axs.set_title("Map with Island nodes Azores")
         # axs.invert_yaxis()
         axs.grid()
+        axs.set_xlim(-31.5, -24.5)
+        axs.set_ylim(36.7, 39.9)
         plt.show()
-    
+        
     def plot_end_map(self):
+
+        #sample links and nodes for creating function
+        self.flight_route = [0,1,2,3,7,8,0]
+
+
+        x = self.df_coordinates["x"]
+        y = self.df_coordinates["y"]
+
+        # Create array with long,lat values of flight path
+        self.x_array_flight = []
+        self.y_array_flight = []
+        for i in self.flight_route:
+            self.x_array_flight.append(x[i])
+            self.y_array_flight.append(y[i])
+
+        # Scatter nodes
+        fig, axs = plt.subplots()
+        axs.scatter(x[0], y[0], c = "r", marker = "o")
+        axs.scatter(x[1:], y[1:], c = "orange", marker = "s")
+        
+        # Get list with island names in strings and print the names with the nodes
+        # Offset determines the distance between the node and the text, ideally not too large
+        islandsnames = []
+        offset = 0.03
+        for name in self.n_name.values():
+            islandsnames.append(name)
+        for i in range(len(islandsnames)):
+            axs.text(x[i]+offset,y[i]+offset,islandsnames[i], c='black')
+        
+        # For each part of the journey (from index i to i+1 in self.flight_route), plot the line from lat,long[i] to lat,long[i+1]
+        for i in range(len(self.flight_route)-1):
+            axs.plot([self.x_array_flight[i],self.x_array_flight[i+1]],
+                     [self.y_array_flight[i],self.y_array_flight[i+1]],color='black')
+
+            # Calculate middle point of the lines and directions to plot an arrow sign at this location with the correct heading
+            self.middlex = (self.x_array_flight[i] + self.x_array_flight[i+1])/2
+            self.middley = (self.y_array_flight[i] + self.y_array_flight[i+1])/2
+            self.diffx = (self.y_array_flight[i+1]-self.y_array_flight[i])
+            self.diffy = (self.x_array_flight[i+1]-self.x_array_flight[i])
+            axs.arrow(self.middlex, self.middley, self.diffy/100, self.diffx/100, shape='full',head_width=0.03, color='black')
+
+        axs.set_xlabel("Longitude $[\deg]$")
+        axs.set_ylabel("Latitude $[\deg]$")
+        axs.set_title("Map with routes between nodes Azores")
+        axs.grid()
+        axs.set_xlim(-31.5, -24.5)
+        axs.set_ylim(36.7, 39.9)
+        plt.show()
+
+
+
         ## Need links and nodes
         #Links to visualise arrows for direction of planes
         #Per link, need to know A/C and amount of times travelled
-        return None
+        #return None
 
 
 if __name__ == '__main__':
@@ -179,7 +242,8 @@ if __name__ == '__main__':
     azor.add_constraints()
     azor.get_solved_model()
     print(azor.n_name)
-    # azor.plot_start_map()
+    azor.plot_start_map()
+    azor.plot_end_map()
     print(f"Status = {azor.status}")
     print(f"Objective value = {azor.objectval}")
     end_t = time.time()
