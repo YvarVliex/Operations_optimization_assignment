@@ -269,7 +269,7 @@ class Azores_VR:
     def check_frequency_route(self):
 
         # Sample links and nodes for creating function
-        self.flight_route = [0,8,0,8,0,8,0,4,0,4,0,6,0]
+        self.flight_route = [0,8,0,8,0,8,0,4,0,6,0,6,5,0]
         
         # Create matrix of sample links and nodes for i (departure) and j (arrival) node
         # Will be replaced with output of frequency data per link lateron, following from the model
@@ -326,7 +326,6 @@ class Azores_VR:
         axs.grid()
         axs.set_xlim(-31.5, -24.5)
         axs.set_ylim(36.7, 39.9)
-        plt.colorbar(cm.ScalarMappable(cmap="Reds"))
         plt.show()
 
 
