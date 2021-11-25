@@ -64,6 +64,24 @@ class Azores_VR:
         for j, name in enumerate(self.df_deliv):
             if name != self.df_deliv.columns[-1]:
                 self.n_name[j] = name
+                
+        self.time_df_dct = {}
+
+        self.t_Vcr_dct = {}
+        for i in range(len(self.df_fleet)):            
+            self.t_Vcr_dct[i] = self.df_fleet["Speed [km/h]"][i]
+            
+        # t_Vcr_dct
+        for t in self.t_Vcr_dct.keys():
+            temp_df = pd.DataFrame(index = self.df_deliv.columns[:-1], columns = self.df_deliv.columns[:-1])
+            for i in self.n_islands:
+                for j in self.n_islands:
+                    if i != j:
+                        temp_df.iloc[i,j] = self.df_distance_2.iloc[i,j]/(0.7*self.t_Vcr_dct[t])*60 + self.df_fleet["Turnaround Time (mins)"][t] 
+                    else:
+                        temp_df.iloc[i,j] = 0  
+                    
+            self.time_df_dct[t] = temp_df.copy()
 
     def initialise_model(self):
     
@@ -81,7 +99,7 @@ class Azores_VR:
                     self.D_var[i,j] = self.AZmodel.addVar(name = f"D({i,j})", vtype = gb.GRB.INTEGER, lb = 0)
                     self.P_var[i,j] = self.AZmodel.addVar(name = f"P({i,j})", vtype = gb.GRB.INTEGER, lb = 0)
                     self.P_name[f"P({i,j})"] = (i,j)
-                    self.P_name[f"D({i,j})"] = (i,j)
+                    self.D_name[f"D({i,j})"] = (i,j)
                     
                     # loop through aircraft type and aircraft number and perform calculation on cost:
                     # = fuel cost * distance + 2 * landing/take-off cost (is same at all airports) + nr. seats
@@ -99,6 +117,8 @@ class Azores_VR:
 
             # Set objective function, minimize this cost
             self.AZmodel.setObjective(self.AZmodel.getObjective(), gb.GRB.MINIMIZE) 
+            
+            self.AZmodel.update()
         
         except:
             print("Error undefined variables: Run get_all_req_val() first.")
@@ -159,6 +179,7 @@ class Azores_VR:
         
     
     def subtour_elim_constr(self):
+        M = 1*10**6
         return None
 
     # Function that will solve the model using Gurobi solver                
@@ -276,8 +297,8 @@ if __name__ == '__main__':
     azor.add_constraints()
     azor.get_solved_model()
     print(azor.n_name)
-    azor.plot_start_map()
-    azor.plot_end_map()
+    # azor.plot_start_map()
+    # azor.plot_end_map()
     print(f"Status = {azor.status}")
     print(f"Objective value = {azor.objectval}")
     end_t = time.time()
