@@ -152,13 +152,13 @@ class Azores_VR:
         x = self.df_coordinates["x"]
         y = self.df_coordinates["y"]
         fig, axs = plt.subplots()
-        axs.scatter(x[0], y[0], c = "r", marker = "o")
-        axs.scatter(x[1:], y[1:], c = "orange", marker = "s")
+        axs.scatter(x[0], y[0], c = "r", marker = "o", s=200)
+        axs.scatter(x[1:], y[1:], c = "orange", marker = "s", s=100)
         
         # Get list with island names in strings and print the names with the nodes
         # Offset determines the distance between the node and the text, ideally not too large
         islandsnames = []
-        offset = 0.03
+        offset = 0.05
         # for name in self.n_name.values():
         #     islandsnames.append(name)
         # for i in range(len(islandsnames)):
@@ -194,13 +194,13 @@ class Azores_VR:
 
         # Scatter nodes
         fig, axs = plt.subplots()
-        axs.scatter(x[0], y[0], c = "r", marker = "o")
-        axs.scatter(x[1:], y[1:], c = "orange", marker = "s")
+        axs.scatter(x[0], y[0], c = "r", marker = "o", s=200)
+        axs.scatter(x[1:], y[1:], c = "orange", marker = "s", s=100)
         
         # Get list with island names in strings and print the names with the nodes
         # Offset determines the distance between the node and the text, ideally not too large
         # islandsnames = []
-        offset = 0.03
+        offset = 0.05
         # for name in self.n_name.values():
         #     islandsnames.append(name)
         # for i in range(len(islandsnames)):
@@ -214,11 +214,11 @@ class Azores_VR:
                      [self.y_array_flight[i],self.y_array_flight[i+1]],color='black')
 
             # Calculate middle point of the lines and directions to plot an arrow sign at this location with the correct heading
-            self.middlex = (self.x_array_flight[i] + self.x_array_flight[i+1])/2
-            self.middley = (self.y_array_flight[i] + self.y_array_flight[i+1])/2
+            self.middlex = (self.x_array_flight[i+1] - self.x_array_flight[i])*0.55 + self.x_array_flight[i]
+            self.middley = (self.y_array_flight[i+1] - self.y_array_flight[i])*0.55 + self.y_array_flight[i]
             self.diffx = (self.y_array_flight[i+1]-self.y_array_flight[i])
             self.diffy = (self.x_array_flight[i+1]-self.x_array_flight[i])
-            axs.arrow(self.middlex, self.middley, self.diffy/100, self.diffx/100, shape='full',head_width=0.03, color='black')
+            axs.arrow(self.middlex, self.middley, self.diffy/100, self.diffx/100, shape='full',head_width=0.05, color='black')
 
         axs.set_xlabel("Longitude $[\deg]$")
         axs.set_ylabel("Latitude $[\deg]$")
