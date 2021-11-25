@@ -179,8 +179,19 @@ class Azores_VR:
         
     
     def subtour_elim_constr(self):
-        M = 1*10**6
-        return None
+
+        #subtour elimination constraint 1
+        for i in self.n_islands:
+            for j in self.n_islands:
+                q_j = self.df_deliv.iloc[0,j]
+                self.AZmodel.addConstr(self.D_var[i,j] - q_j, gb.GRB.EQUAL, self.D_var[j,i])
+
+        #subtour elimination constraint 2
+        for i in self.n_islands:
+            for j in self.n_islands:
+                b_j = self.df_deliv.iloc[0, j]
+                self.AZmodel.addConstr(self.P_var[i,j] + b_j, gb.GRB.EQUAL, self.P_var[j,i])
+
 
     # Function that will solve the model using Gurobi solver                
     def get_solved_model(self):
