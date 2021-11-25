@@ -10,6 +10,8 @@ from numpy.core.fromnumeric import _take_dispatcher
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
+from matplotlib import cm
+from matplotlib.colors import LinearSegmentedColormap
 import time
 
 class Azores_VR:
@@ -181,17 +183,12 @@ class Azores_VR:
         x = self.df_coordinates["x"]
         y = self.df_coordinates["y"]
         fig, axs = plt.subplots()
-        axs.scatter(x[0], y[0], c = "r", marker = "o", s=200)
-        axs.scatter(x[1:], y[1:], c = "orange", marker = "s", s=100)
+        axs.scatter(x[0], y[0], c = "forestgreen", marker = "o", s=200)
+        axs.scatter(x[1:], y[1:], c = "limegreen", marker = "s", s=100)
         
-        # Get list with island names in strings and print the names with the nodes
         # Offset determines the distance between the node and the text, ideally not too large
         islandsnames = []
         offset = 0.05
-        # for name in self.n_name.values():
-        #     islandsnames.append(name)
-        # for i in range(len(islandsnames)):
-        #     axs.text(x[i]+offset,y[i]+offset,islandsnames[i], c='black')
         
         for i, name in enumerate(self.n_name.values()):
             axs.text(x[i]+offset,y[i]+offset,name, c='black')
@@ -205,49 +202,59 @@ class Azores_VR:
         axs.set_ylim(36.7, 39.9)
         plt.show()
         
+    def check_frequency_route(self):
+
+        # Sample links and nodes for creating function
+        self.flight_route = [0,8,0,8,0,8,0,4,0,4,0,6,0]
+        
+        # Create matrix of sample links and nodes for i (departure) and j (arrival) node
+        # Will be replaced with output of frequency data per link lateron, following from the model
+        # Works for now for plotting purposes
+        # Output: self.df_frequency shows number of flights per i,j in final solution
+        self.df_frequency = np.matrix(np.zeros((9,9)))
+        for i in range(len(self.flight_route)-1):
+            self.df_frequency[self.flight_route[i],self.flight_route[i+1]] += 1
+        
     def plot_end_map(self):
-
-        #sample links and nodes for creating function
-        self.flight_route = [0,1,2,3,7,8,0]
-
+        # Get data from check_frequency_route() function
+        self.check_frequency_route()
+      
 
         x = self.df_coordinates["x"]
         y = self.df_coordinates["y"]
-
-        # Create array with long,lat values of flight path
-        self.x_array_flight = []
-        self.y_array_flight = []
-        for i in self.flight_route:
-            self.x_array_flight.append(x[i])
-            self.y_array_flight.append(y[i])
-
+        
         # Scatter nodes
         fig, axs = plt.subplots()
-        axs.scatter(x[0], y[0], c = "r", marker = "o", s=200)
-        axs.scatter(x[1:], y[1:], c = "orange", marker = "s", s=100)
+        axs.scatter(x[0], y[0], c = "forestgreen", marker = "o", s=200)
+        axs.scatter(x[1:], y[1:], c = "limegreen", marker = "s", s=100)
         
-        # Get list with island names in strings and print the names with the nodes
         # Offset determines the distance between the node and the text, ideally not too large
-        # islandsnames = []
         offset = 0.05
-        # for name in self.n_name.values():
-        #     islandsnames.append(name)
-        # for i in range(len(islandsnames)):
-        #     axs.text(x[i]+offset,y[i]+offset,islandsnames[i], c='black')
         for i, name in enumerate(self.n_name.values()):
             axs.text(x[i]+offset,y[i]+offset,name, c='black')
         
-        # For each part of the journey (from index i to i+1 in self.flight_route), plot the line from lat,long[i] to lat,long[i+1]
-        for i in range(len(self.flight_route)-1):
-            axs.plot([self.x_array_flight[i],self.x_array_flight[i+1]],
-                     [self.y_array_flight[i],self.y_array_flight[i+1]],color='black')
+        # Determine which route is operated most, will serve as reference for determining color scales later on
+        maxvalue = self.df_frequency.max()
 
-            # Calculate middle point of the lines and directions to plot an arrow sign at this location with the correct heading
-            self.middlex = (self.x_array_flight[i+1] - self.x_array_flight[i])*0.55 + self.x_array_flight[i]
-            self.middley = (self.y_array_flight[i+1] - self.y_array_flight[i])*0.55 + self.y_array_flight[i]
-            self.diffx = (self.y_array_flight[i+1]-self.y_array_flight[i])
-            self.diffy = (self.x_array_flight[i+1]-self.x_array_flight[i])
-            axs.arrow(self.middlex, self.middley, self.diffy/100, self.diffx/100, shape='full',head_width=0.05, color='black')
+        # Loop through origin (i) and destination (j) nodes to find value of nr of flights on the i,j route
+        for i in range(len(self.df_frequency)):
+            for j in range(len(self.df_frequency)):
+                value = self.df_frequency[i,j]
+                
+                # Only if the value is larger than 0, it is interesting to plot it
+                if value > 0:
+
+                    # Define shade of red this i,j- route will be plotted with
+                    localcolour = ((value / maxvalue),0,0)
+                    axs.plot([x[i],x[j]],
+                             [y[i],y[j]], color = localcolour) 
+        
+                    # Calculate middle point of the lines and directions to plot an arrow sign at this location with the correct heading
+                    self.middlex = (x[j] - x[i])*0.55 + x[i]
+                    self.middley = (y[j] - y[i])*0.55 + y[i]
+                    self.diffx = (y[j]-y[i])
+                    self.diffy = (x[j]-x[i])
+                    axs.arrow(self.middlex, self.middley, self.diffy/100, self.diffx/100, shape='full',head_width=0.05, color=localcolour)
 
         axs.set_xlabel("Longitude $[\deg]$")
         axs.set_ylabel("Latitude $[\deg]$")
@@ -255,6 +262,7 @@ class Azores_VR:
         axs.grid()
         axs.set_xlim(-31.5, -24.5)
         axs.set_ylim(36.7, 39.9)
+        plt.colorbar(cm.ScalarMappable(cmap="Reds"))
         plt.show()
 
 
