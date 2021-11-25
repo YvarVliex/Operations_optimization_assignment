@@ -268,17 +268,26 @@ class Azores_VR:
         
     def check_frequency_route(self):
 
-        # Sample links and nodes for creating function
-        self.flight_route = [0,8,0,8,0,8,0,4,0,6,0,6,5,0]
+        # Sample links and nodes for creating function per aircraft number
+        self.flightroute1 = [0,8,3,2,1,4,5,6,7,0]
+        self.flightroute2 = [0,4,5,0,5,0]
+        self.flightroute3 = [0,8,0,8,0,8,0,8,0]
+        self.flightroute4 = [0,4,3,4,0]
+        
+        # Add all flight routes together, to be processed further
+        self.flight_route_tot = self.flightroute1 + self.flightroute2 + self.flightroute3 + self.flightroute4
         
         # Create matrix of sample links and nodes for i (departure) and j (arrival) node
         # Will be replaced with output of frequency data per link lateron, following from the model
         # Works for now for plotting purposes
         # Output: self.df_frequency shows number of flights per i,j in final solution
         self.df_frequency = np.matrix(np.zeros((9,9)))
-        for i in range(len(self.flight_route)-1):
-            self.df_frequency[self.flight_route[i],self.flight_route[i+1]] += 1
-        
+        for i in range(len(self.flight_route_tot)-1):
+            self.df_frequency[self.flight_route_tot[i],self.flight_route_tot[i+1]] += 1
+
+        # Make sure that no flights are taken into account from depot to depot, as they will not be there in reality
+        self.df_frequency[0,0] = 0
+
     def plot_end_map(self):
         # Get data from check_frequency_route() function
         self.check_frequency_route()
@@ -348,7 +357,7 @@ if __name__ == '__main__':
     azor.get_solved_model()
     # print(azor.n_name)
     # azor.plot_start_map()
-    # azor.plot_end_map()
+    azor.plot_end_map()
     # print(f"Status = {azor.status}")
     # print(f"Objective value = {azor.objectval}")
     end_t = time.time()
