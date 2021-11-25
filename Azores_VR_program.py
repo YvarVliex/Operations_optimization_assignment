@@ -247,8 +247,8 @@ class Azores_VR:
         x = self.df_coordinates["x"]
         y = self.df_coordinates["y"]
         fig, axs = plt.subplots()
-        axs.scatter(x[0], y[0], c = "forestgreen", marker = "o", s=200)
-        axs.scatter(x[1:], y[1:], c = "limegreen", marker = "s", s=100)
+        axs.scatter(x[0], y[0], c = "gold", marker = "o", s=200)
+        axs.scatter(x[1:], y[1:], c = "navajowhite", marker = "s", s=100)
         
         # Offset determines the distance between the node and the text, ideally not too large
         # islandsnames = []
@@ -289,8 +289,8 @@ class Azores_VR:
         
         # Scatter nodes
         fig, axs = plt.subplots()
-        axs.scatter(x[0], y[0], c = "forestgreen", marker = "o", s=200)
-        axs.scatter(x[1:], y[1:], c = "limegreen", marker = "s", s=100)
+        axs.scatter(x[0], y[0], c = "gold", marker = "o", s=200)
+        axs.scatter(x[1:], y[1:], c = "navajowhite", marker = "s", s=100)
         
         # Offset determines the distance between the node and the text, ideally not too large
         offset = 0.05
