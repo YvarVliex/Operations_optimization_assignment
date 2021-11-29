@@ -134,7 +134,7 @@ class Azores_VR:
         #when this func is called all constraints will be added
         self.practical_constr()
         self.pick_deliv_constr()
-        self.subtour_elim_constr()
+        # self.subtour_elim_constr()
         self.time_constr()
         
         self.AZmodel.update()
@@ -157,17 +157,25 @@ class Azores_VR:
         #         for i in self.n_islands:
         #             self.AZmodel.addLConstr(gb.quicksum(self.x_var[i,j,t,k] for j in self.n_islands), gb.GRB.GREATER_EQUAL, 1)
         
-        for i in self.n_islands:
-            for j in self.n_islands:
-                if j!=i:
-                    self.AZmodel.addLConstr(gb.quicksum(self.x_var[i,j,t,k] for t in range(len(self.t_dct)) for k in range(self.t_dct[t])), gb.GRB.GREATER_EQUAL, 1)
         
+        #Wrong nu is t dat ekke route >1x gevlogen worden
+        # for i in self.n_islands:
+        #     for j in self.n_islands:
+        #         if j!=i:
+        #             self.AZmodel.addLConstr(gb.quicksum(self.x_var[i,j,t,k] for t in range(len(self.t_dct)) for k in range(self.t_dct[t])), gb.GRB.GREATER_EQUAL, 1)
+        
+        for j in self.n_islands:
+            self.AZmodel.addLConstr(gb.quicksum(self.x_var[i,j,t,k] for i in self.n_islands if j!=i for t in range(len(self.t_dct)) for k in range(self.t_dct[t])), gb.GRB.GREATER_EQUAL, 1)
+     
+        #wrong
         # sum Xji >= 1 leave node 
-        for i in self.n_islands:
-            for j in self.n_islands:
-                if j!=i:
-                    self.AZmodel.addLConstr(gb.quicksum(self.x_var[j,i,t,k] for t in range(len(self.t_dct)) for k in range(self.t_dct[t])), gb.GRB.GREATER_EQUAL, 1)
-                    
+        # for i in self.n_islands:
+        #     for j in self.n_islands:
+        #         if j!=i:
+        #             self.AZmodel.addLConstr(gb.quicksum(self.x_var[j,i,t,k] for t in range(len(self.t_dct)) for k in range(self.t_dct[t])), gb.GRB.GREATER_EQUAL, 1)
+          
+        for j in self.n_islands:
+            self.AZmodel.addLConstr(gb.quicksum(self.x_var[j,i,t,k] for i in self.n_islands if j!=i for t in range(len(self.t_dct)) for k in range(self.t_dct[t])), gb.GRB.GREATER_EQUAL, 1) 
         # for i in self.n_islands:
         #     temp_val = 0
         #     for j in self.n_islands:
