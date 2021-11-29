@@ -174,8 +174,8 @@ class Azores_VR:
         #         if j!=i:
         #             self.AZmodel.addLConstr(gb.quicksum(self.x_var[j,i,t,k] for t in range(len(self.t_dct)) for k in range(self.t_dct[t])), gb.GRB.GREATER_EQUAL, 1)
           
-        for j in self.n_islands:
-            self.AZmodel.addLConstr(gb.quicksum(self.x_var[j,i,t,k] for i in self.n_islands if j!=i for t in range(len(self.t_dct)) for k in range(self.t_dct[t])), gb.GRB.GREATER_EQUAL, 1) 
+        # for j in self.n_islands:
+        #     self.AZmodel.addLConstr(gb.quicksum(self.x_var[j,i,t,k] for i in self.n_islands if j!=i for t in range(len(self.t_dct)) for k in range(self.t_dct[t])), gb.GRB.GREATER_EQUAL, 1) 
         # for i in self.n_islands:
         #     temp_val = 0
         #     for j in self.n_islands:
@@ -191,10 +191,10 @@ class Azores_VR:
 
         # sum Xji == Xij
                     
-        for i in self.n_islands:
-            for j in self.n_islands:
-                if j!=i:
-                    self.AZmodel.addLConstr(gb.quicksum(self.x_var[j,i,t,k] for t in range(len(self.t_dct)) for k in range(self.t_dct[t])), gb.GRB.EQUAL, gb.quicksum(self.x_var[i,j,t,k] for t in range(len(self.t_dct)) for k in range(self.t_dct[t])))
+        # for i in self.n_islands:
+        #     for j in self.n_islands:
+        #         if j!=i:
+        #             self.AZmodel.addLConstr(gb.quicksum(self.x_var[j,i,t,k] for t in range(len(self.t_dct)) for k in range(self.t_dct[t])), gb.GRB.EQUAL, gb.quicksum(self.x_var[i,j,t,k] for t in range(len(self.t_dct)) for k in range(self.t_dct[t])))
             
         # aircraft that arrives must also leave (constraint 2.5)
         for t in range(len(self.t_dct)):
@@ -202,16 +202,18 @@ class Azores_VR:
                 for h in self.n_islands:
                     self.AZmodel.addLConstr(gb.quicksum(self.x_var[i,h,t,k] for i in self.n_islands), gb.GRB.EQUAL, gb.quicksum(self.x_var[h,j,t,k] for j in self.n_islands))
 
-        # Q400 cannot land a corvo (eq 2.6)
+        # Q400 cannot land a corvo (eq 2.6) 
+        #Add that it cannot TO
         constr_t = 1
-        j_corvo = 1
+        node_corvo = 1
         # temp_xcorvo = 0
         # for i in self.n_islands:
         #     for k in range(self.t_dct[constr_t]):
         #         temp_xcorvo += self.x_var[(i,j_corvo,constr_t,k)]
         # self.AZmodel.addLConstr(temp_xcorvo, gb.GRB.EQUAL, 0)    
         for k in range(self.t_dct[constr_t]):
-            self.AZmodel.addLConstr(gb.quicksum(self.x_var[i,j_corvo,constr_t,k] for i in self.n_islands), gb.GRB.EQUAL, 0)
+            self.AZmodel.addLConstr(gb.quicksum(self.x_var[i,node_corvo,constr_t,k] for i in self.n_islands), gb.GRB.EQUAL, 0)
+            self.AZmodel.addLConstr(gb.quicksum(self.x_var[node_corvo,j ,constr_t,k] for j in self.n_islands), gb.GRB.EQUAL, 0)
                 
         
         self.AZmodel.update()
