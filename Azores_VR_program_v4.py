@@ -204,16 +204,23 @@ class Azores_VR:
 
         # Q400 cannot land a corvo (eq 2.6) 
         #Add that it cannot TO
-        constr_t = 1
+        # constr_t = 1
         node_corvo = 1
         # temp_xcorvo = 0
         # for i in self.n_islands:
         #     for k in range(self.t_dct[constr_t]):
         #         temp_xcorvo += self.x_var[(i,j_corvo,constr_t,k)]
         # self.AZmodel.addLConstr(temp_xcorvo, gb.GRB.EQUAL, 0)    
-        for k in range(self.t_dct[constr_t]):
-            self.AZmodel.addLConstr(gb.quicksum(self.x_var[i,node_corvo,constr_t,k] for i in self.n_islands), gb.GRB.EQUAL, 0)
-            self.AZmodel.addLConstr(gb.quicksum(self.x_var[node_corvo,j ,constr_t,k] for j in self.n_islands), gb.GRB.EQUAL, 0)
+        # for k in range(self.t_dct[constr_t]):
+        #     self.AZmodel.addLConstr(gb.quicksum(self.x_var[i,node_corvo,constr_t,k] for i in self.n_islands), gb.GRB.EQUAL, 0)
+        #     self.AZmodel.addLConstr(gb.quicksum(self.x_var[node_corvo,j ,constr_t,k] for j in self.n_islands), gb.GRB.EQUAL, 0)
+        
+        self.min_landingdist = 800
+        for t in range(len(self.t_dct)):
+            if self.df_fleet["Landing Distance (@MLW)"][t] >= self.min_landingdist:
+                for k in range(self.t_dct[t]):
+                    self.AZmodel.addLConstr(gb.quicksum(self.x_var[i,node_corvo,t,k] for i in self.n_islands), gb.GRB.EQUAL, 0)
+                    self.AZmodel.addLConstr(gb.quicksum(self.x_var[node_corvo,j,t,k] for j in self.n_islands), gb.GRB.EQUAL, 0)
                 
         
         self.AZmodel.update()
