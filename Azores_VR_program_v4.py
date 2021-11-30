@@ -42,6 +42,8 @@ class Azores_VR:
         self.D_var = {}
         self.P_var = {}
         
+        self.min_landingdist = 800
+        
     # Function that allows to extract data from an excel file    
     def excel_data_obtainer(self, filename, sheetname, start_row, end_row, cols):
         df_temp = pd.read_excel(filename, sheetname, usecols = cols, skiprows = start_row, nrows= (end_row-start_row) )
@@ -165,7 +167,7 @@ class Azores_VR:
         #             self.AZmodel.addLConstr(gb.quicksum(self.x_var[i,j,t,k] for t in range(len(self.t_dct)) for k in range(self.t_dct[t])), gb.GRB.GREATER_EQUAL, 1)
         
         for j in self.n_islands:
-            self.AZmodel.addLConstr(gb.quicksum(self.x_var[i,j,t,k] for i in self.n_islands if j!=i for t in range(len(self.t_dct)) for k in range(self.t_dct[t])), gb.GRB.GREATER_EQUAL, 1)
+            self.AZmodel.addConstr(gb.quicksum(self.x_var[i,j,t,k] for i in self.n_islands if j!=i for t in range(len(self.t_dct)) for k in range(self.t_dct[t])), gb.GRB.GREATER_EQUAL, 1, name = "Eachnodevistatleastonce")
      
         #wrong
         # sum Xji >= 1 leave node 
@@ -200,7 +202,7 @@ class Azores_VR:
         for t in range(len(self.t_dct)):
             for k in range(self.t_dct[t]):
                 for h in self.n_islands:
-                    self.AZmodel.addLConstr(gb.quicksum(self.x_var[i,h,t,k] for i in self.n_islands), gb.GRB.EQUAL, gb.quicksum(self.x_var[h,j,t,k] for j in self.n_islands))
+                    self.AZmodel.addConstr(gb.quicksum(self.x_var[i,h,t,k] for i in self.n_islands), gb.GRB.EQUAL, gb.quicksum(self.x_var[h,j,t,k] for j in self.n_islands), name = "ArrivedalsoLeave")
 
         # Q400 cannot land a corvo (eq 2.6) 
         #Add that it cannot TO
@@ -215,12 +217,17 @@ class Azores_VR:
         #     self.AZmodel.addLConstr(gb.quicksum(self.x_var[i,node_corvo,constr_t,k] for i in self.n_islands), gb.GRB.EQUAL, 0)
         #     self.AZmodel.addLConstr(gb.quicksum(self.x_var[node_corvo,j ,constr_t,k] for j in self.n_islands), gb.GRB.EQUAL, 0)
         
-        self.min_landingdist = 800
         for t in range(len(self.t_dct)):
             if self.df_fleet["Landing Distance (@MLW)"][t] >= self.min_landingdist:
                 for k in range(self.t_dct[t]):
-                    self.AZmodel.addLConstr(gb.quicksum(self.x_var[i,node_corvo,t,k] for i in self.n_islands), gb.GRB.EQUAL, 0)
-                    self.AZmodel.addLConstr(gb.quicksum(self.x_var[node_corvo,j,t,k] for j in self.n_islands), gb.GRB.EQUAL, 0)
+                    self.AZmodel.addConstr(gb.quicksum(self.x_var[i,node_corvo,t,k] for i in self.n_islands), gb.GRB.EQUAL, 0)
+                    self.AZmodel.addConstr(gb.quicksum(self.x_var[node_corvo,j,t,k] for j in self.n_islands), gb.GRB.EQUAL, 0)
+        
+        # #Evrything must go to 0?
+        # for t in range(len(self.t_dct)):
+        #     for k in range(self.t_dct[t]): 
+        #         self.AZmodel.addConstr(gb.quicksum(self.x_var[i,0,t,k] for i in self.n_islands), gb.GRB.GREATER_EQUAL, 1)
+        
                 
         
         self.AZmodel.update()
@@ -230,12 +237,22 @@ class Azores_VR:
         # Constraint on the pickups: there are no pickups on the flight from the depot to any island
         # for j in self.n_islands:
         #     self.AZmodel.addLConstr(self.P_var[0,j], gb.GRB.EQUAL, 0)
-        self.AZmodel.addLConstr(gb.quicksum(self.P_var[0,j] for j in self.n_islands),gb.GRB.EQUAL, 0 )
+        self.AZmodel.addConstr(gb.quicksum(self.P_var[0,j] for j in self.n_islands),gb.GRB.EQUAL, 0 )
         
         # Constraint on the deliveries: there are no deliveries on the flight from any island to the depot
         # for i in self.n_islands:
         #     self.AZmodel.addLConstr(self.D_var[i,0], gb.GRB.EQUAL, 0)
-        self.AZmodel.addLConstr(gb.quicksum(self.D_var[i,0] for i in self.n_islands),gb.GRB.EQUAL, 0 )
+        self.AZmodel.addConstr(gb.quicksum(self.D_var[i,0] for i in self.n_islands),gb.GRB.EQUAL, 0 )
+        
+        
+         #Constr to make sure D+P is not larger than the capacity flown on the trajectory
+        for i in self.n_islands:
+            for j in self.n_islands:
+                if j!=i:
+                    self.AZmodel.addConstr((self.D_var[i,j] + self.P_var[i,j]), gb.GRB.LESS_EQUAL, gb.quicksum((self.df_fleet["Number of Seats"][t]*self.x_var[i,j,t,k]) for t in range(len(self.t_dct)) for k in range(self.t_dct[t])))
+                    
+      
+        
             
         self.AZmodel.update()
         
@@ -248,54 +265,49 @@ class Azores_VR:
         #         q_j = self.df_deliv.iloc[0,j]
         #         self.AZmodel.addLConstr(self.D_var[i,j] - q_j, gb.GRB.EQUAL, self.D_var[j,i])
                 
-        for j in self.n_islands:
-            constr_a, constr_b = None, None
+        # for j in self.n_islands:
+        #     constr_a, constr_b = None, None
             
-            for i in self.n_islands:
-                if i!=j:
-                    if constr_a == None:
-                        constr_a = self.D_var[i,j]
+        #     for i in self.n_islands:
+        #         if i!=j:
+        #             if constr_a == None:
+        #                 constr_a = self.D_var[i,j]
                         
-                    else:
-                        constr_a += self.D_var[i,j]
+        #             else:
+        #                 constr_a += self.D_var[i,j]
                     
-                    if constr_b == None:
-                        constr_b = self.D_var[j,i]
+        #             if constr_b == None:
+        #                 constr_b = self.D_var[j,i]
                         
-                    else:
-                        constr_b += self.D_var[j,i]
-                    self.AZmodel.addConstr(constr_a - self.df_deliv.iloc[0,j] == constr_b)
+        #             else:
+        #                 constr_b += self.D_var[j,i]
+        #             self.AZmodel.addConstr(constr_a - self.df_deliv.iloc[0,j] == constr_b)
 
-        #subtour elimination constraint 2
-        # for i in self.n_islands:
-        #     for j in self.n_islands:
-        #         b_j = self.df_deliv.iloc[0, j]
-        #         self.AZmodel.addLConstr(self.P_var[i,j] + b_j, gb.GRB.EQUAL, self.P_var[j,i])
+        # #subtour elimination constraint 2
+        # # for i in self.n_islands:
+        # #     for j in self.n_islands:
+        # #         b_j = self.df_deliv.iloc[0, j]
+        # #         self.AZmodel.addLConstr(self.P_var[i,j] + b_j, gb.GRB.EQUAL, self.P_var[j,i])
         
-        for j in self.n_islands:
-            constr_c, constr_d = None, None
+        # for j in self.n_islands:
+        #     constr_c, constr_d = None, None
             
-            for i in self.n_islands:
-                if i!=j:
-                    if constr_c == None:
-                        constr_c = self.P_var[i,j]
+        #     for i in self.n_islands:
+        #         if i!=j:
+        #             if constr_c == None:
+        #                 constr_c = self.P_var[i,j]
                         
-                    else:
-                        constr_c += self.P_var[i,j]
+        #             else:
+        #                 constr_c += self.P_var[i,j]
                     
-                    if constr_d == None:
-                        constr_d = self.P_var[j,i]
+        #             if constr_d == None:
+        #                 constr_d = self.P_var[j,i]
                         
-                    else:
-                        constr_d += self.P_var[j,i]
-                    self.AZmodel.addConstr(constr_c + self.df_pickup.iloc[0,j] == constr_d) 
+        #             else:
+        #                 constr_d += self.P_var[j,i]
+        #             self.AZmodel.addConstr(constr_c + self.df_pickup.iloc[0,j] == constr_d) 
             
-        #Constr to make sure D+P is not larger than the capacity flown on the trajectory
-        for i in self.n_islands:
-            for j in self.n_islands:
-                if j!=i:
-                    self.AZmodel.addLConstr((self.D_var[i,j] + self.P_var[i,j]), gb.GRB.LESS_EQUAL, gb.quicksum((self.df_fleet["Number of Seats"][t]*self.x_var[i,j,t,k]) for t in range(len(self.t_dct)) for k in range(self.t_dct[t])))
-        
+       
         self.AZmodel.update()
         
     def time_constr(self):       
@@ -308,7 +320,7 @@ class Azores_VR:
         
         for t in range(len(self.t_dct)):
             for k in range(self.t_dct[t]):        
-                self.AZmodel.addLConstr(gb.quicksum(self.x_var[i,j,t,k]*self.time_df_dct[t].iloc[i,j] for i in self.n_islands for j in self.n_islands), gb.GRB.LESS_EQUAL, 7*24*60)
+                self.AZmodel.addConstr(gb.quicksum(self.x_var[i,j,t,k]*self.time_df_dct[t].iloc[i,j] for i in self.n_islands for j in self.n_islands), gb.GRB.LESS_EQUAL, 7*24*60)
         
         #need to add sth to check if a/c back at node 0 at end week
         self.AZmodel.update()
@@ -328,7 +340,7 @@ class Azores_VR:
             self.links = []
             self.D_links = []
             for variable in self.AZmodel.getVars():
-                if "x" in variable.varName and variable.getAttr("x")>= 1:
+                if "x" in variable.varName and variable.getAttr("x")>= 0.99:
                     node_i, node_j, ac_t, ac_k = self.x_name[variable.varName]
                     self.links.append(((node_i,node_j), ac_t, ac_k, variable.getAttr("x"))) #nodes that the link connect, which ac if flying, value of x how often it is flying
                     
