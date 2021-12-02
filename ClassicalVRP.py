@@ -7,6 +7,7 @@ Created on Tue Nov 30 15:58:21 2021
 # Import Modules
 import gurobipy as gb
 import numpy as np
+import pandas as pd
 import matplotlib.pyplot as plt
 
 # Generate class
@@ -19,23 +20,47 @@ class Azores_VR:
     # of the islands. From this information, the distances between each of the
     # nodes are calculated (NOTE: THESE DISTANCES NEED TO BE UPDATED LATER 
     # BECAUSE WE HAVE THE ACTUAL VALUES IN KILOMETERS)
-    def __init__(self):
+    def __init__(self):       
         self.nr_nodes = 9
         self.destinations = [i for i in range(1,self.nr_nodes) ]
         self.nodes = [i for i in range(self.nr_nodes)]
-        self.arcs = [(i,j) for i in self.nodes for j in self.nodes if i!=j]
-        self.q = {1: 14, 2: 10, 3: 13, 4: 13, 5: 13, 6: 11, 7: 13, 8: 12, 0: 0}
-        self.Q = 40
+        self.arcs = [(i,j) for i in self.nodes for j in self.nodes if i!=j]               
+        self.q = {0: 0,     # São Miguel (depot)
+                  1: 32,    # Corvo
+                  2: 246,   # Flores
+                  3: 982,   # Faial
+                  4: 925,   # Pico 
+                  5: 560,   # São Jorge
+                  6: 284,   # Graciosa
+                  7: 3731,  # Terceira
+                  8: 381}   # Santa Maria
+        self.Q = 3731
         self.X = [-25.710126851658337, -31.11362470019505, -31.132089634693635, 
                   -28.715014937042806, -28.44135603209925, -28.169865355343898, 
                   -28.028601283425516, -27.085298004057375, -25.17094296546243]
         self.Y = [37.7459528686296, 39.67106226859879, 39.458113165093444, 
                   38.51988992329496, 38.55430695035533, 38.66328770011398, 
                   39.09235455113123, 38.75703977960301, 36.97374722219599]
-        self.distances = {(i,j): np.sqrt((self.X[i]-self.X[j])**2 + 
-                         (self.Y[i]-self.Y[j])**2) for i in self.nodes for j 
-                         in self.nodes if i!=j}
         
+        # Obtain distance data and reorder it such that the depot gets 0th index
+        # and the other islands also get corresponding indices
+        self.filename = "Azores_Flight_Data_v3.xlsx"
+        self.df_distance = self.excel_data_obtainer(self.filename, "Distance Table", 0,9, "A:J").set_index("Islands")
+        self.df_deliv = self.excel_data_obtainer(self.filename, "Demand Table", 0, 2, "B,D:M").drop(0).set_index("Start").astype('float64').round(0)
+        self.df_deliv.iloc[0,0] = 0
+        self.df_distance_2 = self.df_distance.reindex(self.df_deliv.columns[:-1], columns=self.df_deliv.columns[:-1]).copy()
+
+        # Create dictionary with all distances between nodes i and j
+        self.distances = {(i,j): self.df_distance_2.iloc[i,j] for i in 
+                          self.nodes for j in self.nodes if i!=j}
+        
+
+    # Function that allows to extract data from an excel file using pandas  
+    def excel_data_obtainer(self, filename, sheetname, start_row, end_row, cols):
+        df_temp = pd.read_excel(filename, sheetname, usecols = cols, skiprows = start_row, nrows= (end_row-start_row) )
+        return df_temp
+
+
     # Make a plot of the nodes (destinations with black marker, depot with red
     # marker). Also, for each node, the demand (q) is indicated. 
     def plot_nodes_map(self):
@@ -53,8 +78,8 @@ class Azores_VR:
             plt.annotate('$q_{%d}={%d}$'%(i,self.q[i]),(self.X[i]-
                          self.textoffset,self.Y[i]-self.textoffset))
 
-        plt.xlabel('Latitude')
-        plt.ylabel('Longitude')
+        plt.xlabel('Latitude $[\deg]$')
+        plt.ylabel('Longitud $[\deg]$')
         plt.title("Vehicle Routing Problem Nodes")
         plt.show()
 
@@ -141,6 +166,7 @@ class Azores_VR:
     # soluiton of the classical vehicle routing problem
     def plot_routes_map(self):
 
+        
         self.textoffset = 0.1
 
         plt.figure(figsize=(12,5))
@@ -158,13 +184,19 @@ class Azores_VR:
             for n in range(len(self.routes[r])-1):
                 self.i = self.routes[r][n]
                 self.j = self.routes[r][n+1]
+                self.middle_x = (self.X[self.j]-self.X[self.i])*0.55 + self.X[self.i]
+                self.middle_y = (self.Y[self.j]-self.Y[self.i])*0.55 + self.Y[self.i]
+                self.diff_x = (self.X[self.j]-self.X[self.i])
+                self.diff_y = (self.Y[self.j]-self.Y[self.i])
                 plt.plot([self.X[self.i],self.X[self.j]],[self.Y[self.i],
                          self.Y[self.j]], color='green')
+                plt.arrow(self.middle_x, self.middle_y, self.diff_x/1000, self.diff_y/1000, shape='full',head_width=0.05, color='green')
 
-        plt.xlabel('Latitude')
-        plt.ylabel('Longitude')
+        plt.xlabel('Latitude $[\deg]$')
+        plt.ylabel('Longitude $[\deg]$')
         plt.title("Vehicle Routing Problem Solution")
         plt.show()
+        
 
 # Runs the classes/functions
 if __name__ == '__main__':
