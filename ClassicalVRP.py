@@ -184,6 +184,8 @@ class Azores_VR:
             for n in range(len(self.routes[r])-1):
                 self.i = self.routes[r][n]
                 self.j = self.routes[r][n+1]
+
+                # Add arrows on each of the routes lines to indicate direction of flight
                 self.middle_x = (self.X[self.j]-self.X[self.i])*0.55 + self.X[self.i]
                 self.middle_y = (self.Y[self.j]-self.Y[self.i])*0.55 + self.Y[self.i]
                 self.diff_x = (self.X[self.j]-self.X[self.i])
