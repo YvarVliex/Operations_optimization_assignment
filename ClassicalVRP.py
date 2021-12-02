@@ -20,21 +20,14 @@ class Azores_VR:
     # of the islands. From this information, the distances between each of the
     # nodes are calculated (NOTE: THESE DISTANCES NEED TO BE UPDATED LATER 
     # BECAUSE WE HAVE THE ACTUAL VALUES IN KILOMETERS)
-    def __init__(self):       
+    def __init__(self):   
+        self.filename = "Azores_Flight_Data_v3.xlsx"    
         self.nr_nodes = 9
         self.destinations = [i for i in range(1,self.nr_nodes) ]
         self.nodes = [i for i in range(self.nr_nodes)]
-        self.arcs = [(i,j) for i in self.nodes for j in self.nodes if i!=j]               
-        self.q = {0: 0,     # São Miguel (depot)
-                  1: 32,    # Corvo
-                  2: 246,   # Flores
-                  3: 982,   # Faial
-                  4: 925,   # Pico 
-                  5: 560,   # São Jorge
-                  6: 284,   # Graciosa
-                  7: 3731,  # Terceira
-                  8: 381}   # Santa Maria
-        self.Q = 3731
+        self.arcs = [(i,j) for i in self.nodes for j in self.nodes if i!=j]  
+        
+        # Obtain airport coordinates
         self.X = [-25.710126851658337, -31.11362470019505, -31.132089634693635, 
                   -28.715014937042806, -28.44135603209925, -28.169865355343898, 
                   -28.028601283425516, -27.085298004057375, -25.17094296546243]
@@ -44,10 +37,14 @@ class Azores_VR:
         
         # Obtain distance data and reorder it such that the depot gets 0th index
         # and the other islands also get corresponding indices
-        self.filename = "Azores_Flight_Data_v3.xlsx"
         self.df_distance = self.excel_data_obtainer(self.filename, "Distance Table", 0,9, "A:J").set_index("Islands")
         self.df_deliv = self.excel_data_obtainer(self.filename, "Demand Table", 0, 2, "B,D:M").drop(0).set_index("Start").astype('float64').round(0)
         self.df_deliv.iloc[0,0] = 0
+        self.df_deliv.iloc[0,5] = 40
+        self.q = {i: self.df_deliv.iloc[0,i] for i in self.nodes}
+        self.Q = 80
+        self.q = {0:0, 1:32, 2:6, 3:22, 4:45, 5:1, 6:44, 7:51, 8:61}
+                
         self.df_distance_2 = self.df_distance.reindex(self.df_deliv.columns[:-1], columns=self.df_deliv.columns[:-1]).copy()
 
         # Create dictionary with all distances between nodes i and j
@@ -95,14 +92,14 @@ class Azores_VR:
         self.x = self.model.addVars(self.arcs, vtype = gb.GRB.BINARY, 
                                     name = 'x')
         self.u = self.model.addVars(self.destinations, ub=self.Q, 
-                               vtype = gb.GRB.CONTINUOUS, name = 'u')
+                                vtype = gb.GRB.CONTINUOUS, name = 'u')
         
         # Set objective function (in this case still minimize the distance)
         # NOTE: THIS NEEDS TO BE CHANGED WHEN ENTERING COSTS LATER ON
         self.model.setObjective(gb.quicksum(self.distances[i,j] * self.x[i,j] 
                                 for i,j in self.arcs), gb.GRB.MINIMIZE)
         
-        # Add constraint that each node must arrived at once and must be 
+        # Add constraint that each node must be arrived at once and must be 
         # departed from once
         self.model.addConstrs(gb.quicksum(self.x[i,j] for j in self.nodes if 
                               i!=j) == 1 for i in self.destinations)
