@@ -5,7 +5,7 @@ Created on Thu Dec 2 14:05 2021
 """
 
 import gurobipy as gb
-from numpy.core.fromnumeric import take_dispatcher
+# from numpy.core.fromnumeric import take_dispatcher
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
@@ -103,10 +103,10 @@ def change_single_demand(datafile, textfile, desired_runway_length, node_from, n
     print(f'The new value of the objective function is {objective_val}')
 
 
-def add_remove_islands(datafile, textfile, desired_runway_length, islands_to_remove):
+def add_remove_islands(datafile, textfile, min_runway_length, islands_to_remove):
     """Check the route and create plot for adding or removing islands. Note that islands to remove must be a list of the
     index of which island to remove, even if it is just a single value (so put it in like [1] instead of 1"""
-    model = Azores_VR(datafile, textfile, desired_runway_length)
+    model = Azores_VR(datafile, textfile, min_runway_length)
     for index in islands_to_remove:
         model.df_distance.drop(index)
         model.df_distance.drop(model.df_distance.columns[index], axis=1)
@@ -121,6 +121,29 @@ def add_remove_islands(datafile, textfile, desired_runway_length, islands_to_rem
     objective_val = model.objectval
     model.plot_end_map()
     print(f'The new value of the objective function is {objective_val}')
+
+
+def change_hub(datafile, textfile, min_runway_length, new_hub):
+    """TO DO: FIGURE OUT HOW TO CHANGE PICKUP AND DELIVERY MATRICES (READ FULL DATA AND SELECT RIGHT ROW/COLUMNS?"""
+    model = Azores_VR(datafile, textfile, min_runway_length)
+    all_islands = ['São Miguel', 'Corvo', 'Flores', 'Faial', 'Pico', 'São Jorge', 'Graciosa', 'Terceira', 'Santa Maria']
+    new_indices = [new_hub]
+    for island in all_islands:
+        if island != new_hub:
+            new_indices.append(island)
+    # rearrange the matrices to make the new hub appear in row 0 and column 0
+    model.df_distances_2.reindex(new_indices)
+    model.df_distances_2.reindex(new_indices, axis=1)
+    model.df_coordinates.reindex(new_indices)
+    ## TO DO: get correct demand and pickup matrices
+    model.get_all_req_val()
+    model.initialise_model()
+    model.add_constraints()
+    model.get_solved_model()
+    objective_val = model.objectval
+    model.plot_end_map()
+    print(f'The new value of the objective function is {objective_val}')
+
 
 
 
