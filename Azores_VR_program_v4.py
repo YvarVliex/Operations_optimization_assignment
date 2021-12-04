@@ -50,7 +50,7 @@ class Azores_VR:
         return df_temp
     
     # Function that allows to extract data from a text file
-    def txt_file_reader(self, filename, col_indx):
+    def txt_file_reader(self, txt_file, col_indx):
         return pd.read_csv(txt_file, index_col = col_indx)
     
     # Function that creates dictionaries with type of aircraft and names of islands + indices
