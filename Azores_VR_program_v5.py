@@ -34,8 +34,6 @@ class Azores_VR:
         self.df_distance_2 = self.df_distance.reindex(self.df_deliv.columns[:-1], columns=self.df_deliv.columns[:-1]).copy()
         
         self.df_coordinates = self.txt_file_reader(self.txt_file, 0).reindex(self.df_deliv.columns[:-1])
-        print(self.df_pickup)
-        print(self.df_deliv)
 
         #Initialise some model param
         self.AZmodel = gb.Model("Azores")

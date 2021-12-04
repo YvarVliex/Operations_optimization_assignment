@@ -75,15 +75,13 @@ def upgrade_corvo(datafile, textfile, desired_runway_length):
     print(f'The new value of the objective function is {objective_val}')
 
 
-def change_single_demand(datafile, textfile, desired_runway_length, node_from, node_to, new_demand):
-    """Change the demand of a single link
-    TO DO: check if it still works with the new way the model is coded
+def change_single_demand(datafile, textfile, desired_runway_length, node_to, new_demand):
+    """
+    Change the demand of a single island (or more?), islands should be put in as indices
     """
     model = Azores_VR(datafile, textfile, desired_runway_length)
-    model.df_deliv.iloc[node_from, node_to] = new_demand
-    model.df_deliv.iloc[node_to, node_from] = new_demand
-    model.df_pickup.iloc[node_from, node_to] = new_demand
-    model.df_pickup.iloc[node_to, node_from] = new_demand
+    model.df_deliv.iloc[0, node_to]=new_demand
+    model.df_pickup.iloc[0, node_to] = new_demand
     model.get_all_req_val()
     model.initialise_model()
     model.add_constraints()
@@ -93,17 +91,18 @@ def change_single_demand(datafile, textfile, desired_runway_length, node_from, n
     print(f'The new value of the objective function is {objective_val}')
 
 
-def add_remove_islands(datafile, textfile, min_runway_length, islands_to_remove):
-    """Check the route and create plot for adding or removing islands. Note that islands to remove must be a list of the
-    index of which island to remove, even if it is just a single value (so put it in like [1] instead of 1"""
+def remove_islands(datafile, textfile, min_runway_length, islands_to_remove):
+    """Check the route and create plot for adding or removing islands. Note that islands to remove must be a filled in
+    as strings with the name of the island"""
     model = Azores_VR(datafile, textfile, min_runway_length)
     for index in islands_to_remove:
-        model.df_distance.drop(index)
-        model.df_distance.drop(model.df_distance.columns[index], axis=1)
-        model.df_deliv.drop(index)
-        model.df_deliv.drop(model.df_deliv.columns[index], axis=1)
-        model.df_pickup.drop(index)
-        model.df_pickup.drop(model.df_pickup.columns[index], axis=1)
+        drop_row = model.df_distance.drop(labels=index)
+        drop_column = drop_row.drop(labels=index, axis=1)
+        model.df_distance = drop_column
+        new_deliv = model.df_deliv.drop(labels=index, axis=1)
+        model.df_deliv = new_deliv
+        new_pickup = model.df_pickup.drop(labels=index, axis=1)
+        model.df_pickup = new_pickup
     model.get_all_req_val()
     model.initialise_model()
     model.add_constraints()
@@ -114,26 +113,24 @@ def add_remove_islands(datafile, textfile, min_runway_length, islands_to_remove)
 
 
 def change_hub(datafile, textfile, min_runway_length, new_hub):
-    """TO DO: FIGURE OUT HOW TO CHANGE PICKUP AND DELIVERY MATRICES (READ FULL DATA AND SELECT RIGHT ROW/COLUMNS?"""
+    """Change the location of the hub"""
     model = Azores_VR(datafile, textfile, min_runway_length)
-    model.excel_data_obtainer()
-    model.txt_file_reader()
     all_islands = ['São Miguel', 'Corvo', 'Flores', 'Faial', 'Pico', 'São Jorge', 'Graciosa', 'Terceira', 'Santa Maria']
     new_indices = [new_hub]
     for island in all_islands:
         if island != new_hub:
             new_indices.append(island)
     # rearrange the matrices to make the new hub appear in row 0 and column 0
-    model.df_distances_2.reindex(new_indices)
-    model.df_distances_2.reindex(new_indices, axis=1)
-    model.df_coordinates.reindex(new_indices)
+    model.df_distance_2 = model.df_distance_2.reindex(new_indices)
+    model.df_distance_2 = model.df_distance_2.reindex(new_indices, axis=1)
+    model.df_coordinates = model.df_coordinates.reindex(new_indices)
     #pick up and delivery matrices
-    model.df_pickup = model.excel_data_obtainer("Azores_Flight_Data_v4.xlsx", "Demand Table", 8, 19, "B,D").set_index("End").round(0).T
-    model.df_pickup.reindex(new_indices)
+    model.df_pickup2 = model.excel_data_obtainer("Azores_Flight_Data_v4.xlsx", "Demand Table", 8, 19, "B,D").set_index("End").round(0).T
+    model.df_pickup = model.df_pickup2.reindex(new_indices, axis=1)
     model.df_pickup.iloc[0,0] = 0
-    model.df_deliv = model.excel_data_obtainer(model.filename, "Demand Table", 0, 2, "B,D:M").drop(0).set_index(
+    model.df_deliv2 = model.excel_data_obtainer(model.filename, "Demand Table", 0, 2, "B,D:M").drop(0).set_index(
         "Start").astype('float64').round(0)
-    model.df_deliv.reindex(new_indices)
+    model.df_deliv = model.df_deliv2.reindex(new_indices, axis=1)
     model.df_deliv.iloc[0,0] = 0
     model.get_all_req_val()
     model.initialise_model()
@@ -143,13 +140,11 @@ def change_hub(datafile, textfile, min_runway_length, new_hub):
     model.plot_end_map()
     print(f'The new value of the objective function is {objective_val}')
 
-
-
-
 data_sheet = "Azores_Flight_Data_v4.xlsx"
 txt_file = "coordinates_airports.txt"
 min_runway = 800
-change_hub(data_sheet, txt_file, min_runway, 'Terceira')
+change_hub(data_sheet, txt_file, min_runway, 'Corvo')
+
 
 
 
