@@ -10,21 +10,11 @@ import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
 import time
-from Azores_VR_program import Azores_VR
+from Azores_VR_program_v5 import Azores_VR
 import scipy.stats
 
-"""Stuff that we can vary
-- add or remove nodes
-- increase runway length of Corvo
-- increase in passenger demand
-- switch the hub to a different airport
-
-Stuff that we're interested in:
-- effect on cost function (plot + correlation coefficient)
-- effect on runtime?
-
-TO DO: CHECK IF RUNWAY LENGTH WORKS LIKE THIS
-       CHECK IF PICKUP AND DEMAND WORKS LIKE THIS
+"""
+TO DO: fix issue with not recognizing txt file when initializing model
 """
 
 
@@ -126,6 +116,8 @@ def add_remove_islands(datafile, textfile, min_runway_length, islands_to_remove)
 def change_hub(datafile, textfile, min_runway_length, new_hub):
     """TO DO: FIGURE OUT HOW TO CHANGE PICKUP AND DELIVERY MATRICES (READ FULL DATA AND SELECT RIGHT ROW/COLUMNS?"""
     model = Azores_VR(datafile, textfile, min_runway_length)
+    model.excel_data_obtainer()
+    model.txt_file_reader()
     all_islands = ['São Miguel', 'Corvo', 'Flores', 'Faial', 'Pico', 'São Jorge', 'Graciosa', 'Terceira', 'Santa Maria']
     new_indices = [new_hub]
     for island in all_islands:
@@ -135,7 +127,14 @@ def change_hub(datafile, textfile, min_runway_length, new_hub):
     model.df_distances_2.reindex(new_indices)
     model.df_distances_2.reindex(new_indices, axis=1)
     model.df_coordinates.reindex(new_indices)
-    ## TO DO: get correct demand and pickup matrices
+    #pick up and delivery matrices
+    model.df_pickup = model.excel_data_obtainer("Azores_Flight_Data_v4.xlsx", "Demand Table", 8, 19, "B,D").set_index("End").round(0).T
+    model.df_pickup.reindex(new_indices)
+    model.df_pickup.iloc[0,0] = 0
+    model.df_deliv = model.excel_data_obtainer(model.filename, "Demand Table", 0, 2, "B,D:M").drop(0).set_index(
+        "Start").astype('float64').round(0)
+    model.df_deliv.reindex(new_indices)
+    model.df_deliv.iloc[0,0] = 0
     model.get_all_req_val()
     model.initialise_model()
     model.add_constraints()
@@ -144,6 +143,13 @@ def change_hub(datafile, textfile, min_runway_length, new_hub):
     model.plot_end_map()
     print(f'The new value of the objective function is {objective_val}')
 
+
+
+
+data_sheet = "Azores_Flight_Data_v4.xlsx"
+txt_file = "coordinates_airports.txt"
+min_runway = 800
+change_hub(data_sheet, txt_file, min_runway, 'Terceira')
 
 
 
