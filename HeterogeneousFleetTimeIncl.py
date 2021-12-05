@@ -1,6 +1,5 @@
 import gurobipy as gb
 import numpy as np
-from numpy.matrixlib.defmatrix import asmatrix
 import pandas as pd
 import matplotlib.pyplot as plt
 
@@ -73,8 +72,8 @@ model.setObjective(gb.quicksum(distances[i,j]*x[i,j,k] for i,j,k in arc_var),gb.
 
 # constraints
 # arrival and departures from depot
-model.addConstrs(gb.quicksum(x[0,j,k] for j in clients) <= 1 for k in vehicles)
-model.addConstrs(gb.quicksum(x[i,0,k] for i in clients) <= 1 for k in vehicles)
+model.addConstrs(gb.quicksum(x[0,j,k] for j in clients) == 1 for k in vehicles)
+model.addConstrs(gb.quicksum(x[i,0,k] for i in clients) == 1 for k in vehicles)
 
 # more than one vehicle per node
 model.addConstrs(gb.quicksum(x[i,j,k] for j in nodes for k in vehicles if i!=j) ==1 for i in clients)
