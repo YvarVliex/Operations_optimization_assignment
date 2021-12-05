@@ -5,15 +5,14 @@ import pandas as pd
 import matplotlib.pyplot as plt
 
 # nodes
-n = 5
+n = 11
 clients = [ i for i in range(n) if i != 0]
 nodes = [0] + clients
 arcs = [(i,j) for i in nodes for j in nodes if i!=j]
 
 # demand
-np.random.seed(0)
-q = {n:np.random.randint(20,30) for n in clients}
-q = {1: 18, 2:16, 3:13, 4:50}
+np.random.seed(1)
+q = {n:np.random.randint(10,20) for n in clients}
 q[0] = 0
 
 
@@ -21,18 +20,16 @@ q[0] = 0
 e = {0:0, 1:0, 2:0, 3:0, 4:0, 5:0, 6:0, 7:0, 8:0, 9:0, 10:0} # min times
 l = {0:2000, 1:2000, 2:2000, 3:2000, 4:2000, 5:2000, 6:2000, 7:2000, 8:2000, 9:2000, 10:2000} # max times
 
-e = {n:0 for n in range(5)}
-l = {n:2000 for n in range(5)}
+e = {n:0 for n in range(11)}
+l = {n:2000 for n in range(11)}
 
 s = {n:np.random.randint(3,5) for n in clients} # service time at node i
 s[0] = 0
-print("s: ",s)
 
 # vehicles
-vehicles = [1,2,3] #4]
-trips = [n for n in range(1,51)]
+vehicles = [1,2,3, 4]
 
-Q = {1:50, 2:50, 3:50} #, 4:25}
+Q = {1:50, 2:50, 3:50, 4:25}
 
 # coordinates
 X = np.random.rand(len(nodes))*100
@@ -41,7 +38,6 @@ Y = np.random.rand(len(nodes))*100
 # time and distances
 distances = {(i,j): np.hypot(X[i]-X[j],Y[i]-Y[j]) for i in nodes for j in nodes if i!=j}
 times     = {(i,j): np.hypot(X[i]-X[j],Y[i]-Y[j]) for i in nodes for j in nodes if i!=j}
-print("times: ",times)
 
 # plotje
 # plt.figure(figsize=(12,5))
@@ -90,7 +86,7 @@ model.addConstrs(gb.quicksum(x[i,j,k] for j in nodes if i!=j)-gb.quicksum(x[j,i,
 model.addConstrs(gb.quicksum(q[i]*gb.quicksum(x[i,j,k] for j in nodes if i!= j) for i in nodes) <= Q[k] for k in vehicles)
 
 # flow of time
-model.addConstrs(t[0,k] == 0 for k in vehicles)
+model.addConstrs(t[0,k] == 0 for k in vehicles  )
 model.addConstrs((x[i,j,k] == 1 ) >>  (t[i,k]+s[i] + times[i,j] == t[j,k]) for i in clients for j in clients for k in vehicles if i!=j)
 
 model.addConstrs(t[i,k] >= e[i] for i,k in arc_times)
@@ -123,8 +119,8 @@ for k in vehicles:
                         i=h
             routes.append(aux)
             trucks.append(k)
-# print(routes)
-# print(trucks)
+print(routes)
+print(trucks)
 
 # calculate times
 time_accum = list()
