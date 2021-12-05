@@ -34,8 +34,6 @@ class Azores_VR:
         self.df_distance_2 = self.df_distance.reindex(self.df_deliv.columns[:-1], columns=self.df_deliv.columns[:-1]).copy()
         
         self.df_coordinates = self.txt_file_reader(self.txt_file, 0).reindex(self.df_deliv.columns[:-1])
-        print(self.df_pickup)
-        print(self.df_deliv)
 
         #Initialise some model param
         self.AZmodel = gb.Model("Azores")
@@ -51,7 +49,7 @@ class Azores_VR:
         return df_temp
     
     # Function that allows to extract data from a text file
-    def txt_file_reader(self, filename, col_indx):
+    def txt_file_reader(self, txt_file, col_indx):
         return pd.read_csv(txt_file, index_col = col_indx)
     
     # Function that creates dictionaries with type of aircraft and names of islands + indices
@@ -97,17 +95,16 @@ class Azores_VR:
         # loop through islands for starting node i and arriving node j
         for i in self.n_islands:
             for j in self.n_islands:
-                
-                # Create variables D and P to be integers for deliveries and pickups
-                self.D_var[i,j] = self.AZmodel.addVar(name = f"D({i,j})", vtype = gb.GRB.INTEGER, lb = 0)
-                self.P_var[i,j] = self.AZmodel.addVar(name = f"P({i,j})", vtype = gb.GRB.INTEGER, lb = 0)
-                self.P_name[f"P({i,j})"] = (i,j)
-                self.D_name[f"D({i,j})"] = (i,j)
-                
-                # loop through aircraft type and aircraft number and perform calculation on cost:
-                # = fuel cost * distance + 2 * landing/take-off cost (is same at all airports) + nr. seats
-                # per type of aircraft * cost per passenger
                 for k in range(self.num_veh):
+                     # Create variables D and P to be integers for deliveries and pickups
+                    self.D_var[i,j,k] = self.AZmodel.addVar(name = f"D({i,j,k})", vtype = gb.GRB.INTEGER, lb = 0)
+                    self.P_var[i,j,k] = self.AZmodel.addVar(name = f"P({i,j,k})", vtype = gb.GRB.INTEGER, lb = 0)
+                    self.P_name[f"P({i,j,k})"] = (i,j,k)
+                    self.D_name[f"D({i,j,k})"] = (i,j,k)
+                    
+                    # loop through aircraft type and aircraft number and perform calculation on cost:
+                    # = fuel cost * distance + 2 * landing/take-off cost (is same at all airports) + nr. seats
+                    # per type of aircraft * cost per passenger
                         
                     #Maybe hier toch cost per L/km/pax doen?
                     temp_obj_2 = self.df_fleet["Fuel cost [L/km/pax]"].iloc[k]*self.df_distance_2.iloc[i,j]*self.df_fleet["Number of Seats"][k] +\
