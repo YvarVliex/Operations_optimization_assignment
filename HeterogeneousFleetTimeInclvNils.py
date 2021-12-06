@@ -44,7 +44,7 @@ df_distance_2 = df_distance.reindex(df_deliv.columns[:-1], columns=df_deliv.colu
 
 df_coordinates = txt_file_reader(txt_file, 0).reindex(df_deliv.columns[:-1])
 
-
+min_landingdist = 800
 
 
 # nodes
@@ -134,9 +134,9 @@ x = model.addVars(arc_var, vtype=gb.GRB.INTEGER, name = 'x')
 t = model.addVars(arc_times, vtype=gb.GRB.CONTINUOUS, name = 't')
 
 # objective 
-model.setObjective(gb.quicksum(df_fleet["Fuel cost [L/km/pax]"].iloc[k]*df_distance_2.iloc[i,j]*df_fleet["Number of Seats"][k] +\
+model.setObjective(gb.quicksum((df_fleet["Fuel cost [L/km/pax]"].iloc[k]*df_distance_2.iloc[i,j]*df_fleet["Number of Seats"][k] +\
                             2*df_cost["Landing/TO cost [Euro]"][k] + \
-                                df_fleet["Number of Seats"][k]*df_cost["Cost per passenger"][k]*x[i,j,k] for i,j,k in arc_var),gb.GRB.MINIMIZE)
+                                df_fleet["Number of Seats"][k]*df_cost["Cost per passenger"][k])*x[i,j,k] for i,j,k in arc_var),gb.GRB.MINIMIZE)
 
 # constraints
 # arrival and departures from depot
@@ -144,7 +144,7 @@ model.addConstrs(gb.quicksum(x[0,j,k] for j in clients) <= 1 for k in vehicles)
 model.addConstrs(gb.quicksum(x[i,0,k] for i in clients) <= 1 for k in vehicles)
 
 # more than one vehicle per node
-model.addConstrs(gb.quicksum(x[i,j,k] for j in nodes for k in vehicles if i!=j) ==1 for i in clients)
+model.addConstrs(gb.quicksum(x[i,j,k] for j in nodes for k in vehicles if i!=j) ==1 for i in clients if i!=5) ##!!!!!!! Gekke beun
 
 # flow conservation
 model.addConstrs(gb.quicksum(x[i,j,k] for j in nodes if i!=j)-gb.quicksum(x[j,i,k] for j in nodes if i!=j)==0 for i in nodes for k in vehicles)
@@ -155,6 +155,18 @@ model.addConstrs(gb.quicksum(q[i]*gb.quicksum(x[i,j,k] for j in nodes if i!= j) 
 # flow of time
 model.addConstrs(t[0,k] == 0 for k in vehicles  )
 model.addConstrs((x[i,j,k] == 1 ) >>  (t[i,k]+ times[i,j,k] == t[j,k]) for i in clients for j in clients for k in vehicles if i!=j)
+
+# Not land at corvo
+node_corvo = 1
+
+for k in vehicles:
+    if df_fleet["Landing Distance (@MLW)"][k] >= min_landingdist:
+        model.addConstr(gb.quicksum(x[i,node_corvo,k] for i in nodes if i!=node_corvo), gb.GRB.EQUAL, 0)
+        model.addConstr(gb.quicksum(x[node_corvo,j,k] for j in nodes if j!=node_corvo), gb.GRB.EQUAL, 0)
+
+model.update()
+# model.addConstrs((df_fleet["Landing Distance (@MLW)"][k] <= min_landingdist) >> x[node_corvo,j,k] == 0 for j in nodes if j!=node_corvo for k in vehicles)
+# model.addConstrs((df_fleet["Landing Distance (@MLW)"][k] <= min_landingdist) >> x[i,node_corvo,k] == 0 for i in nodes if i!=node_corvo for k in vehicles)   
 
 # model.addConstrs(t[i,k] >= e[i] for i,k in arc_times)
 # model.addConstrs(t[i,k] <= l[i] for i,k in arc_times)
@@ -206,7 +218,7 @@ for n in range(len(routes)):
 # from Colour import Color
 import matplotlib.patches as mpatches
 
-colorchoice = [ 'red', 'green', 'black', 'grey']
+colorchoice = [ 'red', 'green', 'black', 'grey', 'pink','orange']
 
 plt.figure(figsize=(12,5))
 plt.scatter(X,Y,color='blue')
