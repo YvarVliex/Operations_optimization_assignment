@@ -1,10 +1,9 @@
 # -*- coding: utf-8 -*-
 """
-Created on Sun Dec  5 18:04:01 2021
+Created on Mon Dec  6 19:21:52 2021
 
 @author: Nils de Krom
 """
-
 
 import gurobipy as gb
 import numpy as np
