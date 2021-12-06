@@ -56,7 +56,8 @@ time_df_dct = {}
 
 k_Vcr_dct = {}
 
-
+P = 47
+trips = [n for n in range(P)]
 # demand
 # np.random.seed(1)
 q = {n: df_deliv.iloc[0,n] for n in nodes}
@@ -120,9 +121,8 @@ plt.show()
 
 # Solving the problem
 # arcs for the model
-arc_var = [(i,j,k) for i in nodes for j in nodes for k in vehicles if i!=j]
-arc_times = [(i,k) for i in nodes for k in vehicles]
-
+arc_var = [(i,j,k,p) for i in nodes for j in nodes for k in vehicles if i!=j for p in trips]
+arc_times = [(i,k,p) for i in nodes for k in vehicles for p in trips]
 
 
 # model
@@ -133,33 +133,40 @@ x = model.addVars(arc_var, vtype=gb.GRB.INTEGER, name = 'x')
 t = model.addVars(arc_times, vtype=gb.GRB.CONTINUOUS, name = 't')
 
 # objective 
-model.setObjective(gb.quicksum(df_fleet["Fuel cost [L/km/pax]"].iloc[k]*df_distance_2.iloc[i,j]*df_fleet["Number of Seats"][k] +\
+model.setObjective(gb.quicksum((df_fleet["Fuel cost [L/km/pax]"].iloc[k]*df_distance_2.iloc[i,j]*df_fleet["Number of Seats"][k] +\
                             2*df_cost["Landing/TO cost [Euro]"][k] + \
-                                df_fleet["Number of Seats"][k]*df_cost["Cost per passenger"][k]*x[i,j,k] for i,j,k in arc_var),gb.GRB.MINIMIZE)
+                                df_fleet["Number of Seats"][k]*df_cost["Cost per passenger"][k])*x[i,j,k,p] for i,j,k,p in arc_var),gb.GRB.MINIMIZE)
 
 # constraints
 # arrival and departures from depot
-model.addConstrs(gb.quicksum(x[0,j,k] for j in clients) <= 1 for k in vehicles)
-model.addConstrs(gb.quicksum(x[i,0,k] for i in clients) <= 1 for k in vehicles)
+model.addConstrs(gb.quicksum(x[0,j,k,p] for j in clients) <= 1 for k in vehicles for p in trips)
+model.addConstrs(gb.quicksum(x[i,0,k,p] for i in clients) <= 1 for k in vehicles for p in trips)
 
 # more than one vehicle per node
-model.addConstrs(gb.quicksum(x[i,j,k] for j in nodes for k in vehicles if i!=j) ==1 for i in clients)
+### CHECK THIS ONE
+model.addConstrs(gb.quicksum(x[i,j,k,p] for j in nodes for k in vehicles for p in trips if i!=j) >=1 for i in clients)
 
 # flow conservation
-model.addConstrs(gb.quicksum(x[i,j,k] for j in nodes if i!=j)-gb.quicksum(x[j,i,k] for j in nodes if i!=j)==0 for i in nodes for k in vehicles)
+model.addConstrs(gb.quicksum(x[i,j,k,p] for j in nodes if i!=j)-gb.quicksum(x[j,i,k,p] for j in nodes if i!=j)==0 for i in nodes for k in vehicles for p in trips)
 
 
-model.addConstrs(gb.quicksum(q[i]*gb.quicksum(x[i,j,k] for j in nodes if i!= j) for i in nodes) <= Q[k] for k in vehicles)
+###LOOK AT THIS ONE
+model.addConstrs(gb.quicksum(q[i]*gb.quicksum(x[i,j,k,p] for j in nodes if i!= j) for i in nodes) <= Q[k] for k in vehicles for p in trips)
+# model.addConstrs(gb.quicksum(q[i]*gb.quicksum(x[i,j,k,p] for j in nodes if i!= j) for i in nodes) <= Q[k]*gb.quicksum(x[i,j,k,p] for j in nodes if i!= j) for k in vehicles for p in trips)
 
 # flow of time
-model.addConstrs(t[0,k] == 0 for k in vehicles  )
-model.addConstrs((x[i,j,k] == 1 ) >>  (t[i,k]+ times[i,j,k] == t[j,k]) for i in clients for j in clients for k in vehicles if i!=j)
+model.addConstrs(t[0,k,p] == 0 for k in vehicles for p in trips)
+model.addConstrs((x[i,j,k,p] == 1 ) >>  (t[i,k,p]+ times[i,j,k] == t[j,k,p]) for i in clients for j in clients for k in vehicles for p in trips if i!=j)
 
 # model.addConstrs(t[i,k] >= e[i] for i,k in arc_times)
 # model.addConstrs(t[i,k] <= l[i] for i,k in arc_times)
 
-# model.Params.timeLimit = 60
+model.Params.timeLimit = 60
 # model.Params.MIPGap = 0.1
+
+
+# Multiroute constraints!!!!
+# model.addConstrs(t[i,k,p] <= t[i,k,p+1] for i in clients for k in vehicles for p in trips[:-1])
 
 model.optimize()
 
@@ -174,17 +181,18 @@ trucks = []
 K = vehicles
 N = nodes
 for k in vehicles:
-    for i in nodes:
-        if i!=0 and x[0,i,k].x > 0.99:
-            aux=[0,i]
-            while i!=0:
-                j=i
-                for h in nodes:
-                    if j!=h and x[j,h,k].x>0.9:
-                        aux.append(h)
-                        i=h
-            routes.append(aux)
-            trucks.append(k)
+    for p in trips:
+        for i in nodes:
+            if i!=0 and x[0,i,k,p].x > 0.99:
+                aux=[0,i]
+                while i!=0:
+                    j=i
+                    for h in nodes:
+                        if j!=h and x[j,h,k,p].x>0.9:
+                            aux.append(h)
+                            i=h
+                routes.append(aux)
+                trucks.append(k)
 print(routes)
 print(trucks)
 
