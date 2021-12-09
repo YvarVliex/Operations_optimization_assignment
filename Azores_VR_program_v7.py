@@ -2,7 +2,7 @@
 """
 Created on Thu Dec  9 13:39:30 2021
 
-@author: Nils de Krom
+@author: Nils de Krom, Maarten Beltman, Yvar Vliex
 """
 
 
