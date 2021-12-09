@@ -13,6 +13,7 @@ azor_test = Azores_VR(data_sheet, txt_file,min_landingdist, data_distance_cols, 
 
 class MyTestCase(unittest.TestCase):
     
+    # Test lengths of certain lists/dataframes/arrays
     def test_dataframe_lengths(self):
         self.assertAlmostEqual(len(azor_test.df_distance),9)
         self.assertAlmostEqual(len(azor_test.df_fleet),6)
@@ -20,8 +21,19 @@ class MyTestCase(unittest.TestCase):
         self.assertAlmostEqual(len(azor_test.df_deliv),1)
         self.assertAlmostEqual(len(azor_test.df_distance_2),9)
         self.assertAlmostEqual(len(azor_test.df_coordinates),9)
+        self.assertAlmostEqual(azor_test.n_islands,9)
+        self.assertAlmostEqual(len(azor_test.destinations),8)
+        self.assertAlmostEqual(len(azor_test.nodes),9)
+        self.assertAlmostEqual(len(azor_test.island_arcs),72)
+        self.assertAlmostEqual(len(azor_test.q),9)
+        self.assertAlmostEqual(len(azor_test.vehicles),6)
+        self.assertAlmostEqual(len(azor_test.Q),6)
+        self.assertAlmostEqual(azor_test.min_landingdist,800)
+        self.assertAlmostEqual(len(azor_test.t_min),9)
+        self.assertAlmostEqual(len(azor_test.t_max),9)
 
-    def test_dataframe_values(self):
+    # Test fleet values
+    def test_fleet_values(self):
         self.assertTrue(azor_test.df_fleet.iloc[0,0], 'Bombardier Dash 8 Q200')
         self.assertTrue(azor_test.df_fleet.iloc[1,0], 'Bombardier Dash 8 Q200')
         self.assertTrue(azor_test.df_fleet.iloc[2,0], 'Bombardier Dash 8 Q400')
@@ -29,6 +41,8 @@ class MyTestCase(unittest.TestCase):
         self.assertTrue(azor_test.df_fleet.iloc[4,0], 'Bombardier Dash 8 Q400')
         self.assertTrue(azor_test.df_fleet.iloc[5,0], 'Bombardier Dash 8 Q400')
         
+    # Test cost values
+    def test_cost_values(self):    
         self.assertTrue(azor_test.df_cost.iloc[0,0], 'Bombardier Dash 8 Q200')
         self.assertTrue(azor_test.df_cost.iloc[1,0], 'Bombardier Dash 8 Q200')
         self.assertTrue(azor_test.df_cost.iloc[2,0], 'Bombardier Dash 8 Q400')
@@ -36,6 +50,8 @@ class MyTestCase(unittest.TestCase):
         self.assertTrue(azor_test.df_cost.iloc[4,0], 'Bombardier Dash 8 Q400')
         self.assertTrue(azor_test.df_cost.iloc[5,0], 'Bombardier Dash 8 Q400')
 
+    # Test demand values
+    def test_demand_values(self):
         self.assertAlmostEqual(azor_test.df_deliv.iloc[0,0], 0)
         self.assertAlmostEqual(azor_test.df_deliv.iloc[0,1], 32)
         self.assertAlmostEqual(azor_test.df_deliv.iloc[0,2], 6)
@@ -45,7 +61,8 @@ class MyTestCase(unittest.TestCase):
         self.assertAlmostEqual(azor_test.df_deliv.iloc[0,6], 44)
         self.assertAlmostEqual(azor_test.df_deliv.iloc[0,7], 51)
         self.assertAlmostEqual(azor_test.df_deliv.iloc[0,8], 61)
-        
+
+    # Test distance matrix    
     def test_distance_2_matrix_values(self):
         distance_2_vals = np.matrix([[  0,    515,     508,    277,   256,        238,       252,       164,           98],
                                      [515,      0,      24,    243,   262,        277,       273,       362,          599],
@@ -60,6 +77,7 @@ class MyTestCase(unittest.TestCase):
             for j in range(9):
                 self.assertAlmostEqual(azor_test.df_distance_2.iloc[i,j],distance_2_vals[i,j])
 
+    # Test correct index per island and correct coordinates (X and Y)
     def test_coordinates(self):
         self.assertTrue(azor_test.df_coordinates.iloc[0,0], 'São Miguel')
         self.assertTrue(azor_test.df_coordinates.iloc[1,0], 'Corvo')
@@ -80,7 +98,7 @@ class MyTestCase(unittest.TestCase):
         self.assertAlmostEqual(azor_test.X[6], -28.028601, places=6)
         self.assertAlmostEqual(azor_test.X[7], -27.085298, places=6)
         self.assertAlmostEqual(azor_test.X[8], -25.170943, places=6)
-        
+
         self.assertAlmostEqual(azor_test.Y[0],  37.745953, places=6)
         self.assertAlmostEqual(azor_test.Y[1],  39.671062, places=6)
         self.assertAlmostEqual(azor_test.Y[2],  39.458113, places=6)
@@ -90,6 +108,57 @@ class MyTestCase(unittest.TestCase):
         self.assertAlmostEqual(azor_test.Y[6],  39.092355, places=6)
         self.assertAlmostEqual(azor_test.Y[7],  38.757040, places=6)
         self.assertAlmostEqual(azor_test.Y[8],  36.973747, places=6)
+
+    # Test velocity of fleet
+    def test_fleet_velicty(self):
+        azor_test.get_all_req_val()
+        self.assertAlmostEqual(azor_test.k_Vcr_dct[0], 535)
+        self.assertAlmostEqual(azor_test.k_Vcr_dct[1], 535)
+        self.assertAlmostEqual(azor_test.k_Vcr_dct[2], 667)
+        self.assertAlmostEqual(azor_test.k_Vcr_dct[3], 667)
+        self.assertAlmostEqual(azor_test.k_Vcr_dct[4], 667)
+        self.assertAlmostEqual(azor_test.k_Vcr_dct[5], 667)
+
+    # Test time arrays for the different aircraft
+    def test_time_arrays(self):
+        azor_test.get_all_req_val()
+        self.assertAlmostEqual(len(azor_test.time_df_dct),6)
+        # Test lengths of each of the aircraft time arrays
+        for i in range(6):
+            self.assertAlmostEqual(len(azor_test.time_df_dct[i]),9)
+        # Test if the two Q200 aircraft have same values
+        for j in range(9):
+            for k in range(9):
+                self.assertAlmostEqual(azor_test.time_df_dct[0].iloc[j,k],azor_test.time_df_dct[1].iloc[j,k])
+        # Test if the four Q400 aircraft have same values
+        for j in range(9):
+            for k in range(9):
+                self.assertAlmostEqual(azor_test.time_df_dct[2].iloc[j,k],azor_test.time_df_dct[3].iloc[j,k])
+        for j in range(9):
+            for k in range(9):
+                self.assertAlmostEqual(azor_test.time_df_dct[2].iloc[j,k],azor_test.time_df_dct[4].iloc[j,k])
+        for j in range(9):
+            for k in range(9):
+                self.assertAlmostEqual(azor_test.time_df_dct[2].iloc[j,k],azor_test.time_df_dct[5].iloc[j,k])
+
+    # Test if distances are correctly parsed (for usage in GUROBI Model) for all i,j combinations
+    def test_distance_arc_vars(self):
+        azor_test.get_all_req_val()
+        self.assertAlmostEqual(len(azor_test.distances),72)
+        for i in range(9):
+            for j in range(9):
+                if i!=j:
+                    self.assertAlmostEqual(azor_test.distances[(i,j)],azor_test.df_distance_2.iloc[i,j])
+
+    # Test if times are correctly parsed (for usage in GUROBI Model) for all i,j,k combinations
+    def test_times_arc_vars(self):
+        azor_test.get_all_req_val()
+        self.assertAlmostEqual(len(azor_test.times),432)
+        for i in range(9):
+            for j in range(9):
+                if i!=j:
+                    for k in range(6):
+                        self.assertAlmostEqual(azor_test.times[(i,j,k)],azor_test.time_df_dct[k].iloc[i,j])
 
 
 if __name__ == '__main__':
