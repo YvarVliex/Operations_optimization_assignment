@@ -70,7 +70,24 @@ class MyTestCase(unittest.TestCase):
         self.assertTrue(azor_test.df_coordinates.iloc[8,0], 'Santa Maria')
 
         self.assertAlmostEqual(azor_test.X[0], -25.710127, places=6)
+        self.assertAlmostEqual(azor_test.X[1], -31.113625, places=6)
+        self.assertAlmostEqual(azor_test.X[2], -31.132090, places=6)
+        self.assertAlmostEqual(azor_test.X[3], -28.715015, places=6)
+        self.assertAlmostEqual(azor_test.X[4], -28.441356, places=6)
+        self.assertAlmostEqual(azor_test.X[5], -28.169865, places=6)
+        self.assertAlmostEqual(azor_test.X[6], -28.028601, places=6)
+        self.assertAlmostEqual(azor_test.X[7], -27.085298, places=6)
+        self.assertAlmostEqual(azor_test.X[8], -25.170943, places=6)
+        
         self.assertAlmostEqual(azor_test.Y[0],  37.745953, places=6)
+        self.assertAlmostEqual(azor_test.Y[1],  39.671062, places=6)
+        self.assertAlmostEqual(azor_test.Y[2],  39.458113, places=6)
+        self.assertAlmostEqual(azor_test.Y[3],  38.519890, places=6)
+        self.assertAlmostEqual(azor_test.Y[4],  38.554307, places=6)
+        self.assertAlmostEqual(azor_test.Y[5],  38.663288, places=6)
+        self.assertAlmostEqual(azor_test.Y[6],  39.092355, places=6)
+        self.assertAlmostEqual(azor_test.Y[7],  38.757040, places=6)
+        self.assertAlmostEqual(azor_test.Y[8],  36.973747, places=6)
 
 
 if __name__ == '__main__':
