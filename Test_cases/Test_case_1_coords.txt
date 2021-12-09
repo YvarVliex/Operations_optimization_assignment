@@ -1,4 +1,4 @@
 Islands,y,x
-1,       100, 29
-2,      40, 30
-3,       70, 36
+IslandA,100,29
+IslandB,40,30
+IslandC,70,36

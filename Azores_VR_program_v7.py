@@ -14,7 +14,7 @@ import time
 
 class Azores_VR:
     
-    def __init__(self, filename, txt_file, min_landingdist, data_distance_cols, data_deliv_cols):
+    def __init__(self, filename, txt_file, min_landingdist, data_distance_cols, data_deliv_cols, landingcorvoconstr = "yes"):
         
         #Obtaining all necessary panda dataframes (distance_2/fleet/cost/deliveries/pickups/coordinates)
         self.filename = filename
@@ -36,6 +36,8 @@ class Azores_VR:
         
         self.df_coordinates = self.txt_file_reader(self.txt_file, 0).reindex(self.df_deliv.columns)
         
+        
+        self.landingcorvoconstr = landingcorvoconstr
         # coordinates
         self.X = self.df_coordinates["x"]
         self.Y = self.df_coordinates["y"]
@@ -109,14 +111,15 @@ class Azores_VR:
     
     def initialise_model(self):
         # decistion variables
-        self.x_var =  self.AZmodel.addVars(self.arc_var, vtype=gb.GRB.INTEGER, name = 'x')
+        self.x_var =  self.AZmodel.addVars(self.arc_var, vtype=gb.GRB.BINARY, name = 'x')
         self.t_var =  self.AZmodel.addVars(self.arc_times, vtype=gb.GRB.CONTINUOUS, name = 't')
 
         # set model objective
         self.AZmodel.setObjective(gb.quicksum((self.df_fleet["Fuel cost [L/km/pax]"].iloc[k]*self.df_distance_2.iloc[i,j]*self.df_fleet["Number of Seats"][k] +\
                             2*self.df_cost["Landing/TO cost [Euro]"][k] + \
                                 self.df_fleet["Number of Seats"][k]*self.df_cost["Cost per passenger"][k])*self.x_var[i,j,k] for i,j,k in self.arc_var),gb.GRB.MINIMIZE)
-            
+        
+        self.AZmodel.update()
             
     def adding_constraints(self):
         
@@ -138,12 +141,14 @@ class Azores_VR:
         self.AZmodel.addConstrs((self.x_var[i,j,k] == 1 ) >>  (self.t_var[i,k] + self.times[i,j,k] == self.t_var[j,k]) for i in self.destinations for j in self.destinations for k in self.vehicles if i!=j)
         
         # Not land at corvo
-        node_corvo = 1
         
-        for k in self.vehicles:
-            if self.df_fleet["Landing Distance (@MLW)"][k] >= self.min_landingdist:
-                self.AZmodel.addConstr(gb.quicksum(self.x_var[i,node_corvo,k] for i in self.nodes if i!=node_corvo), gb.GRB.EQUAL, 0)
-                self.AZmodel.addConstr(gb.quicksum(self.x_var[node_corvo,j,k] for j in self.nodes if j!=node_corvo), gb.GRB.EQUAL, 0)
+        if self.landingcorvoconstr == "yes":
+            node_corvo = 1      
+            
+            for k in self.vehicles:
+                if self.df_fleet["Landing Distance (@MLW)"][k] >= self.min_landingdist:
+                    self.AZmodel.addConstr(gb.quicksum(self.x_var[i,node_corvo,k] for i in self.nodes if i!=node_corvo), gb.GRB.EQUAL, 0)
+                    self.AZmodel.addConstr(gb.quicksum(self.x_var[node_corvo,j,k] for j in self.nodes if j!=node_corvo), gb.GRB.EQUAL, 0)
 
         
         # Time window constraint
@@ -152,6 +157,8 @@ class Azores_VR:
     
     def get_solution(self):
         self.AZmodel.optimize()
+        
+        self.objective_value = self.AZmodel.ObjVal
         
         print(f"Value Objective Function: {self.AZmodel.ObjVal}")
         
@@ -261,7 +268,7 @@ class Azores_VR:
                                             
             
             
-        patch = [mpatches.Patch(color=self.colorchoice[n],label="vehcile "+
+        patch = [mpatches.Patch(color=self.colorchoice[n],label="vehicle "+
             str(self.aircrafts[n])+"|cap="+str(self.Q[self.aircrafts[n]])) for n 
             in range(len(self.aircrafts))]
         plt.legend(handles=patch, loc='best')
