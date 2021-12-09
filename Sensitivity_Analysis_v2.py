@@ -113,9 +113,9 @@ def remove_islands(datafile, textfile, min_runway_length, islands_to_remove):
     print(f'The new value of the objective function is {objective_val}')
 
 
-def change_hub(datafile, textfile, min_runway_length, new_hub):
+def change_hub(datafile, textfile, min_runway_length, new_hub, data_distance_cols, data_deliv_cols):
     """Change the location of the hub"""
-    model = Azores_VR(datafile, textfile, min_runway_length)
+    model = Azores_VR(datafile, textfile, min_runway_length, data_distance_cols, data_deliv_cols)
     all_islands = ['São Miguel', 'Corvo', 'Flores', 'Faial', 'Pico', 'São Jorge', 'Graciosa', 'Terceira', 'Santa Maria']
     new_indices = [new_hub]
     for island in all_islands:
@@ -147,8 +147,10 @@ def change_hub(datafile, textfile, min_runway_length, new_hub):
 
 data_sheet = "Azores_Flight_Data_v4.xlsx"
 txt_file = "coordinates_airports.txt"
+data_distance_cols = "A:J"
+data_deliv_cols = "B,D:L"
 min_runway = 800
-change_hub(data_sheet, txt_file, min_runway, 'Corvo')
+change_hub(data_sheet, txt_file, min_runway, 'Corvo', data_distance_cols, data_deliv_cols)
 
 
 

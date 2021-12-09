@@ -14,17 +14,17 @@ import time
 
 class Azores_VR:
     
-    def __init__(self, filename, txt_file, min_landingdist):
+    def __init__(self, filename, txt_file, min_landingdist, data_distance_cols, data_deliv_cols):
         
         #Obtaining all necessary panda dataframes (distance_2/fleet/cost/deliveries/pickups/coordinates)
         self.filename = filename
         self.txt_file = txt_file
         self.sheet_names = pd.ExcelFile(filename).sheet_names
-        self.df_distance = self.excel_data_obtainer(self.filename, "Distance Table", 0,9, "A:J").set_index("Islands")
+        self.df_distance = self.excel_data_obtainer(self.filename, "Distance Table", 0,9, data_distance_cols).set_index("Islands")
         self.df_fleet = self.excel_data_obtainer(self.filename, "AC_data", 0, 6, "A:M").set_index("Aircraft type")
         self.df_cost = self.excel_data_obtainer(self.filename, "Cost_sheet", 0, 6, "A,E:H").set_index("Aircraft type")
                 
-        self.df_deliv = self.excel_data_obtainer(self.filename, "Demand Table", 0, 2, "B,D:L").drop(0).set_index("Start").astype('float64').round(0)
+        self.df_deliv = self.excel_data_obtainer(self.filename, "Demand Table", 0, 2, data_deliv_cols).drop(0).set_index("Start").astype('float64').round(0)
         # self.df_deliv = self.df_deliv.reindex(self.df_deliv.columns[:-1]).fillna(0).copy()
         self.df_deliv.iloc[0,0] = 0
                 
@@ -277,9 +277,12 @@ class Azores_VR:
 if __name__ == '__main__':
     min_landingdist = 800
     start_t = time.time()
+    
+    data_distance_cols = "A:J"
+    data_deliv_cols = "B,D:L"
     data_sheet = "Azores_Flight_Data_v4.xlsx"
     txt_file = "coordinates_airports.txt"
-    azor_model = Azores_VR(data_sheet, txt_file,min_landingdist)
+    azor_model = Azores_VR(data_sheet, txt_file,min_landingdist, data_distance_cols, data_deliv_cols)
     
     azor_model.get_all_req_val()
     azor_model.initialise_model()
