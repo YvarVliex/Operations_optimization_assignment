@@ -6,7 +6,9 @@ from Azores_VR_program_v7 import Azores_VR
 min_landingdist = 800
 data_sheet = "Azores_Flight_Data_v4.xlsx"
 txt_file = "coordinates_airports.txt"
-azor_test = Azores_VR(data_sheet, txt_file,min_landingdist)
+data_distance_cols = "A:J"
+data_deliv_cols = "B,D:L"
+azor_test = Azores_VR(data_sheet, txt_file,min_landingdist, data_distance_cols, data_deliv_cols)
 
 
 class MyTestCase(unittest.TestCase):
