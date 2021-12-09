@@ -1,7 +1,8 @@
+# -*- coding: utf-8 -*-
 """
-Created on Thu Dec 2 14:05 2021
+Created on Thu Dec  9 15:28:58 2021
 
-@authors: Yvar Vliex
+@author: Nils de Krom, Yvar Vliex
 """
 
 import gurobipy as gb
@@ -23,8 +24,8 @@ def create_run_model(data_file, text_file, min_runway):
     model = Azores_VR(data_file, text_file, min_runway)
     model.get_all_req_val()
     model.initialise_model()
-    model.add_constraints()
-    model.get_solved_model()
+    model.adding_constraints()
+    model.get_solution()
     objective_val = model.objectval
     return model, objective_val
 
@@ -68,10 +69,10 @@ def upgrade_corvo(datafile, textfile, desired_runway_length):
     model = Azores_VR(datafile, textfile, desired_runway_length)
     model.get_all_req_val()
     model.initialise_model()
-    model.add_constraints()
-    model.get_solved_model()
+    model.adding_constraints()
+    model.get_solution()
     objective_val = model.objectval
-    model.plot_end_map()
+    model.plot_trajectories_map()
     print(f'The new value of the objective function is {objective_val}')
 
 
@@ -84,10 +85,10 @@ def change_single_demand(datafile, textfile, desired_runway_length, node_to, new
     model.df_pickup.iloc[0, node_to] = new_demand
     model.get_all_req_val()
     model.initialise_model()
-    model.add_constraints()
-    model.get_solved_model()
+    model.adding_constraints()
+    model.get_solution()
     objective_val = model.objectval
-    model.plot_end_map()
+    model.plot_trajectories_map()
     print(f'The new value of the objective function is {objective_val}')
 
 
@@ -105,10 +106,10 @@ def remove_islands(datafile, textfile, min_runway_length, islands_to_remove):
         model.df_pickup = new_pickup
     model.get_all_req_val()
     model.initialise_model()
-    model.add_constraints()
-    model.get_solved_model()
+    model.adding_constraints()
+    model.get_solution()
     objective_val = model.objectval
-    model.plot_end_map()
+    model.plot_trajectories_map()
     print(f'The new value of the objective function is {objective_val}')
 
 
@@ -120,9 +121,12 @@ def change_hub(datafile, textfile, min_runway_length, new_hub):
     for island in all_islands:
         if island != new_hub:
             new_indices.append(island)
+    # print(new_indices)
     # rearrange the matrices to make the new hub appear in row 0 and column 0
     model.df_distance_2 = model.df_distance_2.reindex(new_indices)
     model.df_distance_2 = model.df_distance_2.reindex(new_indices, axis=1)
+    # print(model.nodes)
+    # print(model.df_distance_2)
     model.df_coordinates = model.df_coordinates.reindex(new_indices)
     #pick up and delivery matrices
     model.df_pickup2 = model.excel_data_obtainer("Azores_Flight_Data_v4.xlsx", "Demand Table", 8, 19, "B,D").set_index("End").round(0).T
@@ -130,14 +134,15 @@ def change_hub(datafile, textfile, min_runway_length, new_hub):
     model.df_pickup.iloc[0,0] = 0
     model.df_deliv2 = model.excel_data_obtainer(model.filename, "Demand Table", 0, 2, "B,D:L").drop(0).set_index(
         "Start").astype('float64').round(0)
-    model.df_deliv = model.df_deliv2.reindex(new_indices, axis=1)
+    model.df_deliv = model.df_deliv2.reindex(new_indices, axis=1).copy()
     model.df_deliv.iloc[0,0] = 0
+    # print(model.df_deliv)
     model.get_all_req_val()
     model.initialise_model()
-    model.add_constraints()
-    model.get_solved_model()
+    model.adding_constraints()
+    model.get_solution()
     objective_val = model.objectval
-    model.plot_end_map()
+    model.plot_trajectories_map()
     print(f'The new value of the objective function is {objective_val}')
 
 data_sheet = "Azores_Flight_Data_v4.xlsx"

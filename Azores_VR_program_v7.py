@@ -7,9 +7,7 @@ Created on Thu Dec  9 13:39:30 2021
 
 
 import gurobipy as gb
-from numpy.core.fromnumeric import _take_dispatcher
 import pandas as pd
-import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib.patches as mpatches
 import time
@@ -26,7 +24,7 @@ class Azores_VR:
         self.df_fleet = self.excel_data_obtainer(self.filename, "AC_data", 0, 6, "A:M").set_index("Aircraft type")
         self.df_cost = self.excel_data_obtainer(self.filename, "Cost_sheet", 0, 6, "A,E:H").set_index("Aircraft type")
                 
-        self.df_deliv = self.excel_data_obtainer(self.filename, "Demand Table", 0, 2, "B,D:M").drop(0).set_index("Start").astype('float64').round(0)
+        self.df_deliv = self.excel_data_obtainer(self.filename, "Demand Table", 0, 2, "B,D:L").drop(0).set_index("Start").astype('float64').round(0)
         # self.df_deliv = self.df_deliv.reindex(self.df_deliv.columns[:-1]).fillna(0).copy()
         self.df_deliv.iloc[0,0] = 0
                 
@@ -34,9 +32,9 @@ class Azores_VR:
         # self.df_pickup = self.df_pickup.reindex(self.df_deliv.columns[:-1]).fillna(0).copy()
         self.df_pickup.iloc[0,0] = 0
         
-        self.df_distance_2 = self.df_distance.reindex(self.df_deliv.columns[:-1], columns=self.df_deliv.columns[:-1]).copy()
+        self.df_distance_2 = self.df_distance.reindex(self.df_deliv.columns, columns=self.df_deliv.columns).copy()
         
-        self.df_coordinates = self.txt_file_reader(self.txt_file, 0).reindex(self.df_deliv.columns[:-1])
+        self.df_coordinates = self.txt_file_reader(self.txt_file, 0).reindex(self.df_deliv.columns)
         
         # coordinates
         self.X = self.df_coordinates["x"]
@@ -89,7 +87,7 @@ class Azores_VR:
             
         # t_Vcr_dct
         for k in self.vehicles:
-            temp_df = pd.DataFrame(index = self.df_deliv.columns[:-1], columns = self.df_deliv.columns[:-1])
+            temp_df = pd.DataFrame(index = self.df_deliv.columns, columns = self.df_deliv.columns)
             for i in self.nodes:
                 for j in self.nodes:
                     if i != j:
@@ -99,8 +97,6 @@ class Azores_VR:
                     
             self.time_df_dct[k] = temp_df.copy()
             
-            
-
         
         # time and distances
         self.distances = {(i,j): self.df_distance_2.iloc[i,j] for i in self.nodes for j in self.nodes if i!=j}
@@ -228,10 +224,11 @@ class Azores_VR:
         
     def plot_trajectories_map(self):
 
-        self.colorchoice = ['red', 'green', 'black', 'grey', 'blue', 'orange']        
+        self.colorchoice = ['red', 'green', 'black', 'grey', 'skyblue', 'orange']        
         self.textoffset = 0.1
 
         plt.figure(figsize=(12,5))
+        
         plt.scatter(self.X,self.Y,color='blue')
 
         plt.scatter(self.X[0],self.Y[0],color='red',marker='D')
@@ -250,7 +247,7 @@ class Azores_VR:
                 self.diff_x = (self.X[self.j]-self.X[self.i])
                 self.diff_y = (self.Y[self.j]-self.Y[self.i])
                 plt.plot([self.X[self.i],self.X[self.j]],[self.Y[self.i],
-                         self.Y[self.j]], color=self.colorchoice[r])
+                         self.Y[self.j]], color=self.colorchoice[r], zorder = 0)
                 plt.arrow(self.middle_x, self.middle_y, self.diff_x/1000, 
                     self.diff_y/1000, shape='full',head_width=0.05,
                     color=self.colorchoice[r])
@@ -261,12 +258,15 @@ class Azores_VR:
                 plt.annotate('$q_{%d}=%d$ | $t_{%d}=%d$'%(i,self.q[i],i,
                     self.time_accum[r][n]),(self.X[i]-self.textoffset,
                     self.Y[i]-self.textoffset))
+                                            
+            
             
         patch = [mpatches.Patch(color=self.colorchoice[n],label="vehcile "+
             str(self.aircrafts[n])+"|cap="+str(self.Q[self.aircrafts[n]])) for n 
             in range(len(self.aircrafts))]
         plt.legend(handles=patch, loc='best')
 
+        
 
         plt.xlabel('Latitude $[\deg]$')
         plt.ylabel('Longitude $[\deg]$')
