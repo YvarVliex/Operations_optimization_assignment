@@ -86,6 +86,31 @@ class MyTestCase(unittest.TestCase):
         # print('############################')
         # print(azor_case_2.aircrafts)
         
+    def test_testcase_3(self):
+        "Test that checks if the program will take the slightly cheaper versions of the vehicles"
+        data_sheet = "Test_cases/Test_case_3.xlsx"
+        txt_file = "Test_cases/Test_case_1_coords.txt"
+        min_landingdist = 800
+        
+        data_distance_cols_case_1 = "A:D"
+        data_deliv_cols_case_1 = "B,D:F"
+        azor_case_3 = Azores_VR(data_sheet, txt_file,min_landingdist, data_distance_cols_case_1, data_deliv_cols_case_1, "no")
+        
+        azor_case_3.get_all_req_val()
+        azor_case_3.initialise_model()
+        azor_case_3.adding_constraints()
+        
+        azor_case_3.get_solution()  
+        
+        # azor_case_1.plot_nodes_map()
+        azor_case_3.plot_trajectories_map()
+        
+        
+        ##Hand check
+        cheaper_vehicles = [2,3]
+        
+        self.assertEqual(azor_case_3.aircrafts, cheaper_vehicles)
+        
 if __name__ == '__main__':
     unittest.main()
 
