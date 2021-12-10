@@ -64,18 +64,18 @@ class MyTestCase(unittest.TestCase):
 
     # Test distance matrix    
     def test_distance_2_matrix_values(self):
-        distance_2_vals = np.matrix([[  0,    515,     508,    277,   256,        238,       252,       164,           98],
-                                     [515,      0,      24,    243,   262,        277,       273,       362,          599],
-                                     [508,     24,       0,    233,   253,        271,       270,       356,          589],
-                                     [277,    243,     233,      0,    24,         50,        87,       144,          356],
-                                     [256,    262,     253,     24,     0,         27,        70,       120,          337],
-                                     [238,    277,     271,     50,    27,          0,        49,        95,          324],
-                                     [252,    273,     270,     87,    70,         49,         0,        90,          344],
-                                     [164,    362,     356,    144,   120,         95,        90,         0,          260],
-                                     [ 98,    599,     589,    356,   337,        324,       344,       260,            0]])  
+        self.distance_2_vals = np.matrix([[  0,    515,     508,    277,   256,        238,       252,       164,           98],
+                                          [515,      0,      24,    243,   262,        277,       273,       362,          599],
+                                          [508,     24,       0,    233,   253,        271,       270,       356,          589],
+                                          [277,    243,     233,      0,    24,         50,        87,       144,          356],
+                                          [256,    262,     253,     24,     0,         27,        70,       120,          337],
+                                          [238,    277,     271,     50,    27,          0,        49,        95,          324],
+                                          [252,    273,     270,     87,    70,         49,         0,        90,          344],
+                                          [164,    362,     356,    144,   120,         95,        90,         0,          260],
+                                          [ 98,    599,     589,    356,   337,        324,       344,       260,            0]])  
         for i in range(9):
             for j in range(9):
-                self.assertAlmostEqual(azor_test.df_distance_2.iloc[i,j],distance_2_vals[i,j])
+                self.assertAlmostEqual(azor_test.df_distance_2.iloc[i,j],self.distance_2_vals[i,j])
 
     # Test correct index per island and correct coordinates (X and Y)
     def test_coordinates(self):
@@ -159,6 +159,62 @@ class MyTestCase(unittest.TestCase):
                 if i!=j:
                     for k in range(6):
                         self.assertAlmostEqual(azor_test.times[(i,j,k)],azor_test.time_df_dct[k].iloc[i,j])
+
+    # Tests if the cost value (Obj. Value) gives the correct value, compared with hand calculation of all cost components,
+    # taking into account the final solution the GUROBI solver gives for the trips
+    def test_objective_function_outcome(self):
+
+        # Values from GUROBI solver
+        self.trajectories_Q200 = [[0, 2, 3, 0], [0, 1, 0]]
+        self.trajectories_Q400 = [[0, 8, 0], [0, 7, 0], [0, 6, 0], [0, 4, 0]]
+        self.dist_Q200 = 0
+        self.dist_Q400 = 0
+        # Get distances flown for each aircraft type
+        for i in self.trajectories_Q200:
+            for j in range(len(i)-1):
+                self.dist_Q200 += azor_test.df_distance_2.iloc[i[j],i[j+1]]
+        for i in self.trajectories_Q400:
+            for j in range(len(i)-1):
+                self.dist_Q400 += azor_test.df_distance_2.iloc[i[j],i[j+1]]
+
+        # Values from excel database file
+        self.fuelcost_Q200_perkm_perPAX = 0.024071414
+        self.fuelcost_Q400_perkm_perPAX = 0.01591941
+        self.Q_Q200 = 37
+        self.Q_Q400 = 80
+
+        # Get total fuel cost for each aircraft type
+        self.fuelcost_Q200_total = self.fuelcost_Q200_perkm_perPAX * self.Q_Q200 * self.dist_Q200
+        self.fuelcost_Q400_total = self.fuelcost_Q400_perkm_perPAX * self.Q_Q400 * self.dist_Q400
+
+        # Get number of flights per aircraft type
+        self.nr_flights_total_Q200 = 0
+        self.nr_flights_total_Q400 = 0
+        for i in self.trajectories_Q200:
+            self.nr_flights_total_Q200 += (len(i)-1)
+        for i in self.trajectories_Q400:
+            self.nr_flights_total_Q400 += (len(i)-1)
+        
+        # Values from excel database file
+        self.cost_TO_LA_Q200 = 51.95468
+        self.cost_TO_LA_Q400 = 92.8901
+        self.cost_perPAX = 9.108
+
+        # Get total take-off and landing costs for each aircraft type
+        self.TO_LA_cost_Q200_total = self.cost_TO_LA_Q200 * 2 * self.nr_flights_total_Q200
+        self.TO_LA_cost_Q400_total = self.cost_TO_LA_Q400 * 2 * self.nr_flights_total_Q400
+
+        # Get total passenger costs for each aircraft type
+        self.PAX_cost_Q200_total = self.nr_flights_total_Q200 * self.Q_Q200 * self.cost_perPAX
+        self.PAX_cost_Q400_total = self.nr_flights_total_Q400 * self.Q_Q400 * self.cost_perPAX
+
+        # Add all costs together, run the AZmodel file and compare the values
+        self.total_costs = self.fuelcost_Q200_total + self.fuelcost_Q400_total + self.TO_LA_cost_Q200_total + self.TO_LA_cost_Q400_total + self.PAX_cost_Q200_total + self.PAX_cost_Q400_total
+        azor_test.get_all_req_val()
+        azor_test.initialise_model()
+        azor_test.adding_constraints()
+        azor_test.get_solution()
+        self.assertAlmostEqual(azor_test.AZmodel.ObjVal, self.total_costs, places=4)
 
 
 if __name__ == '__main__':
