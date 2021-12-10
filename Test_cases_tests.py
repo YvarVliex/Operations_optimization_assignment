@@ -7,15 +7,13 @@ Created on Thu Dec  9 16:26:41 2021
 
 
 import unittest
-import numpy as np
-
 from Azores_VR_program_v7 import Azores_VR
 
 
 class MyTestCase(unittest.TestCase):
     
     def test_testcase_1(self):
-           
+        "Test that checks if the program will provide same output as hand determined solution"
         data_sheet = "Test_cases/Test_case_1.xlsx"
         txt_file = "Test_cases/Test_case_1_coords.txt"
         min_landingdist = 800
@@ -30,7 +28,7 @@ class MyTestCase(unittest.TestCase):
         
         azor_case_1.get_solution()  
         
-        azor_case_1.plot_nodes_map()
+        # azor_case_1.plot_nodes_map()
         azor_case_1.plot_trajectories_map()
         
         
@@ -43,6 +41,8 @@ class MyTestCase(unittest.TestCase):
         self.assertAlmostEqual(azor_case_1.objective_value, HC_obj_tot, 3)
         
     def test_testcase_2(self):
+        "Test that checks if the program will provide same output as hand determined solution"
+        
         data_sheet = "Test_cases/Test_case_2.xlsx"
         txt_file = "Test_cases/Test_case_1_coords.txt"
         min_landingdist = 800
@@ -57,9 +57,34 @@ class MyTestCase(unittest.TestCase):
         
         azor_case_2.get_solution()  
         
-        azor_case_2.plot_nodes_map()
+        # azor_case_2.plot_nodes_map()
         azor_case_2.plot_trajectories_map()
         
+        threshold = 0.01 #%
+        
+        #hand calc
+        
+        #Correct option
+        HC_obj_BC = 2*(0.01591941*30.59411708*80 + 2*92.8901 + 80*9.108)
+        HC_obj_BA = 2*(0.0240714136648884*60.00833*37 + 2*51.95468 + 37*9.108)
+        
+        perc_diff_1 = (azor_case_2.objective_value - (HC_obj_BC+HC_obj_BA))/(HC_obj_BC+HC_obj_BA) * 100
+        perc_diff_2 = (azor_case_2.objective_value - (HC_obj_BC+HC_obj_BA))/(azor_case_2.objective_value) * 100
+        
+        #Incorrect option
+        HC_obj_BC_inc = (0.01591941*30.59411708*80 + 2*92.8901 + 80*9.108)
+        HC_obj_CA_inc = (0.01591941*30.80584*80 + 2*92.8901 + 80*9.108)
+        HC_obj_AB_inc = (0.01591941*60.00833*80 + 2*92.8901 + 80*9.108)
+        
+        HC_obj_more_exp = HC_obj_BC_inc+HC_obj_CA_inc+HC_obj_AB_inc
+        
+        self.assertLess(perc_diff_1, threshold)
+        self.assertLess(perc_diff_2, threshold)
+        
+        self.assertLess(azor_case_2.objective_value, HC_obj_more_exp)
+        
+        # print('############################')
+        # print(azor_case_2.aircrafts)
         
 if __name__ == '__main__':
     unittest.main()
