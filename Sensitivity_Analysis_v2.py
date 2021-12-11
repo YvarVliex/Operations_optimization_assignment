@@ -21,35 +21,33 @@ TO DO: fix issue with not recognizing txt file when initializing model
 
 def create_run_model(data_file, text_file, min_runway):
     """Creates a model from a given data_file and text_file, outputs the cost"""
-    model = Azores_VR(data_file, text_file, min_runway)
+    model = Azores_VR(data_file, text_file, min_runway,  data_distance_cols = "A:J", data_deliv_cols = "B,D:L")
     model.get_all_req_val()
     model.initialise_model()
     model.adding_constraints()
     model.get_solution()
-    objective_val = model.objectval
-    return model, objective_val
+    # model.plot_trajectories_map()
+    objective = model.objective_value
+    return model, objective
 
 
 def change_demand_set_amount(text_file, plot_route):
     """
-    Compares the cost (objective function) with a varying of the demand (all demand is varied by the same amount, this
-    can be changed, so far I just put some random values)
-    Only thing that is necessary is to create a bunch of datafiles with varying demand
+    Compares the cost (objective function) with a varying of the demand (change it to a step of 0.1 to have more data)
     """
-    percentage_of_demand = [20, 40, 60, 80, 100, 120, 140, 160, 180]
-    model_02, result_02 = create_run_model('datafile_0.2', text_file, 800)
-    model_04, result_04 = create_run_model('datafile_0.4', text_file, 800)
-    model_06, result_06 = create_run_model('datafile_0.6', text_file, 800)
-    model_08, result_08 = create_run_model('datafile_0.8', text_file, 800)
-    model_10, result_10 = create_run_model('datafile_1.0', text_file, 800)
-    model_12, result_12 = create_run_model('datafile_1.2', text_file, 800)
-    model_14, result_14 = create_run_model('datafile_1.4', text_file, 800)
-    model_16, result_16 = create_run_model('datafile_1.6', text_file, 800)
-    model_18, result_18 = create_run_model('datafile_1.8', text_file, 800)
+    percentage_of_demand = [20, 40, 60, 80, 100, 110]
+    model_02, result_02 = create_run_model('Sens_analysis/datafile_0.2.xlsx', text_file, 800)
+    model_04, result_04 = create_run_model('Sens_analysis/datafile_0.4.xlsx', text_file, 800)
+    model_06, result_06 = create_run_model('Sens_analysis/datafile_0.6.xlsx', text_file, 800)
+    model_08, result_08 = create_run_model('Sens_analysis/datafile_0.8.xlsx', text_file, 800)
+    model_10, result_10 = create_run_model('Sens_analysis/datafile_1.0.xlsx', text_file, 800)
+    model_11, result_11 = create_run_model('Sens_analysis/datafile_1.1.xlsx', text_file, 800)
+    # model_12, result_12 = create_run_model('Sens_analysis/datafile_1.2.xlsx', text_file, 800)
+    # model_13, result_13 = create_run_model('Sens_analysis/datafile_1.3.xlsx', text_file, 800)
 
-    models = [model_02, model_04, model_06, model_08, model_10, model_12, model_14, model_16, model_18]
-    results = [result_02, result_04, result_06, result_08, result_10, result_12, result_14, result_16, result_18]
-    plt.plot(percentage_of_demand, results)
+    models = [model_02, model_04, model_06, model_08, model_10, model_11]
+    results = [result_02, result_04, result_06, result_08, result_10, result_11]
+    plt.scatter(percentage_of_demand, results)
     plt.grid()
     plt.xlabel('Percentage of original demand')
     plt.ylabel('Cost funtion')
@@ -66,36 +64,40 @@ def change_demand_set_amount(text_file, plot_route):
 
 def upgrade_corvo(datafile, textfile, desired_runway_length):
     """" Function to see the effect of upgrading the runway at Corvo so both plane types can land"""
-    model = Azores_VR(datafile, textfile, desired_runway_length)
+    start_t = time.time()
+    model = Azores_VR(datafile, textfile, desired_runway_length, data_distance_cols = "A:J", data_deliv_cols = "B,D:L", landingcorvoconstr = 'no')
     model.get_all_req_val()
     model.initialise_model()
     model.adding_constraints()
     model.get_solution()
-    objective_val = model.objectval
+    end_t_woplot = time.time()
+    print(f"Runtime = {end_t_woplot - start_t}")
     model.plot_trajectories_map()
-    print(f'The new value of the objective function is {objective_val}')
+    plt.show()
 
 
 def change_single_demand(datafile, textfile, desired_runway_length, node_to, new_demand):
     """
     Change the demand of a single island (or more?), islands should be put in as indices
     """
-    model = Azores_VR(datafile, textfile, desired_runway_length)
-    model.df_deliv.iloc[0, node_to]=new_demand
+    start_t = time.time()
+    model = Azores_VR(datafile, textfile, desired_runway_length, data_distance_cols = "A:J", data_deliv_cols = "B,D:L")
+    model.df_deliv.iloc[0, node_to]= new_demand
     model.df_pickup.iloc[0, node_to] = new_demand
     model.get_all_req_val()
     model.initialise_model()
     model.adding_constraints()
     model.get_solution()
-    objective_val = model.objectval
+    end_t_woplot = time.time()
+    print(f"Runtime = {end_t_woplot - start_t}")
     model.plot_trajectories_map()
-    print(f'The new value of the objective function is {objective_val}')
+    plt.show()
 
 
 def remove_islands(datafile, textfile, min_runway_length, islands_to_remove):
     """Check the route and create plot for adding or removing islands. Note that islands to remove must be a filled in
     as strings with the name of the island"""
-    model = Azores_VR(datafile, textfile, min_runway_length)
+    model = Azores_VR(datafile, textfile, min_runway_length, data_distance_cols = "A:J", data_deliv_cols = "B,D:L")
     for index in islands_to_remove:
         drop_row = model.df_distance.drop(labels=index)
         drop_column = drop_row.drop(labels=index, axis=1)
@@ -108,9 +110,7 @@ def remove_islands(datafile, textfile, min_runway_length, islands_to_remove):
     model.initialise_model()
     model.adding_constraints()
     model.get_solution()
-    objective_val = model.objectval
     model.plot_trajectories_map()
-    print(f'The new value of the objective function is {objective_val}')
 
 
 def change_hub(datafile, textfile, min_runway_length, new_hub, data_distance_cols, data_deliv_cols):
@@ -150,13 +150,18 @@ txt_file = "coordinates_airports.txt"
 data_distance_cols = "A:J"
 data_deliv_cols = "B,D:L"
 min_runway = 800
-change_hub(data_sheet, txt_file, min_runway, 'Corvo', data_distance_cols, data_deliv_cols)
 
 
+"""Change Demand"""
+#change_total_demand
+change_demand_set_amount(txt_file, False)
+
+# single demand
+# change_single_demand(data_sheet, txt_file, 800, 8, 31)  # reduce demand of island that has the highest demand
+# change_single_demand(data_sheet, txt_file, 800, 5, 30)  # increase demand of island that has the lowest
 
 
-
-
-
+"""Change Nodes"""
+# upgrade_corvo(data_sheet, txt_file, 1000)
 
 

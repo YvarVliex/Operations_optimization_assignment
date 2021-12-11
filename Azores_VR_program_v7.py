@@ -39,33 +39,33 @@ class Azores_VR:
         
         self.landingcorvoconstr = landingcorvoconstr
         # coordinates
-        self.X = self.df_coordinates["x"]
-        self.Y = self.df_coordinates["y"]
-        
-        ### Make required lists
-        self.n_islands = len(self.df_distance_2)
-        
-        self.destinations = [i for i in range(1, self.n_islands)]
-        self.nodes = [n for n in range(self.n_islands)]
-        
-        self.island_arcs = [(i,j) for i in self.nodes for j in self.nodes if i!=j]
-        
-        self.q = {n: self.df_deliv.iloc[0,n] for n in self.nodes}
-        self.q[0] = 0
-        
-        # vehicles
-        self.vehicles = [k for k in range(len(self.df_fleet))]
-        
-        self.Q = {k:self.df_fleet["Number of Seats"][k] for k in range(len(self.df_fleet))}
-
+        # self.X = self.df_coordinates["x"]
+        # self.Y = self.df_coordinates["y"]
+        #
+        # ### Make required lists
+        # self.n_islands = len(self.df_distance_2)
+        #
+        # self.destinations = [i for i in range(1, self.n_islands)]
+        # self.nodes = [n for n in range(self.n_islands)]
+        #
+        # self.island_arcs = [(i,j) for i in self.nodes for j in self.nodes if i!=j]
+        #
+        # # self.q = {n: self.df_deliv.iloc[0,n] for n in self.nodes}
+        # # self.q[0] = 0
+        #
+        # # vehicles
+        # self.vehicles = [k for k in range(len(self.df_fleet))]
+        #
+        # self.Q = {k:self.df_fleet["Number of Seats"][k] for k in range(len(self.df_fleet))}
+        #
         self.min_landingdist = min_landingdist
-        
-        # Time window
-        self.t_start = 0
-        self.t_end = 10080-9360
-        
-        self.t_min = {n:self.t_start for n in range(self.n_islands)}
-        self.t_max = {n:self.t_end for n in range(self.n_islands)}
+        #
+        # # Time window
+        # self.t_start = 0
+        # self.t_end = 10080-9360
+        #
+        # self.t_min = {n:self.t_start for n in range(self.n_islands)}
+        # self.t_max = {n:self.t_end for n in range(self.n_islands)}
         
         #Initialise some model param       
         self.AZmodel = gb.Model("Azores")
@@ -80,7 +80,34 @@ class Azores_VR:
         return pd.read_csv(txt_file, index_col = col_indx)
     
     def get_all_req_val(self):
-        
+        self.X = self.df_coordinates["x"]
+        self.Y = self.df_coordinates["y"]
+
+        ### Make required lists
+        self.n_islands = len(self.df_distance_2)
+
+        self.destinations = [i for i in range(1, self.n_islands)]
+        self.nodes = [n for n in range(self.n_islands)]
+
+        self.island_arcs = [(i, j) for i in self.nodes for j in self.nodes if i != j]
+
+        self.q = {n: self.df_deliv.iloc[0,n] for n in self.nodes}
+        self.q[0] = 0
+
+        # vehicles
+        self.vehicles = [k for k in range(len(self.df_fleet))]
+
+        self.Q = {k: self.df_fleet["Number of Seats"][k] for k in range(len(self.df_fleet))}
+
+        # self.min_landingdist = min_landingdist
+
+        # Time window
+        self.t_start = 0
+        self.t_end = 10080 - 9360
+
+        self.t_min = {n: self.t_start for n in range(self.n_islands)}
+        self.t_max = {n: self.t_end for n in range(self.n_islands)}
+
         self.time_df_dct = {}
         self.k_Vcr_dct = {}
         
@@ -204,6 +231,8 @@ class Azores_VR:
                     t = self.times[i,j,k]+self.time_lst[-1]
                     self.time_lst.append(t)
             self.time_accum.append(self.time_lst)
+
+        return self.objective_value
         
         
     # Make a plot of the nodes (destinations with black marker, depot with red
