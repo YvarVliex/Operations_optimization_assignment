@@ -32,9 +32,9 @@ class Azores_VR:
         # self.df_pickup = self.df_pickup.reindex(self.df_deliv.columns[:-1]).fillna(0).copy()
         self.df_pickup.iloc[0,0] = 0
         
-        self.df_distance_2 = self.df_distance.reindex(self.df_deliv.columns, columns=self.df_deliv.columns).copy()
+        # self.df_distance_2 = self.df_distance.reindex(self.df_deliv.columns, columns=self.df_deliv.columns).copy()
         
-        self.df_coordinates = self.txt_file_reader(self.txt_file, 0).reindex(self.df_deliv.columns)
+        # self.df_coordinates = self.txt_file_reader(self.txt_file, 0).reindex(self.df_deliv.columns)
         
         
         self.landingcorvoconstr = landingcorvoconstr
@@ -80,6 +80,8 @@ class Azores_VR:
         return pd.read_csv(txt_file, index_col = col_indx)
     
     def get_all_req_val(self):
+        self.df_distance_2 = self.df_distance.reindex(self.df_deliv.columns, columns=self.df_deliv.columns).copy()
+        self.df_coordinates = self.txt_file_reader(self.txt_file, 0).reindex(self.df_deliv.columns)
         self.X = self.df_coordinates["x"]
         self.Y = self.df_coordinates["y"]
 
