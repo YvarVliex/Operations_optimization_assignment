@@ -15,25 +15,25 @@ azor_test.get_all_req_val()
 main_routes = []
 
 # Sao Miguel is hub
-#nr_direct = [0,0,3,12,11,7,3,46,4]
+nr_direct = [0,0,3,12,11,7,3,46,4]
 
 # Terceira is hub
-nr_direct = [116, 0, 3, 12, 11, 7, 3, 0, 4]
+#nr_direct = [116, 0, 3, 12, 11, 7, 3, 0, 4]
 
 print(len(nr_direct))
 
 for l in range(len(nr_direct)):
     for i in range(nr_direct[l]):
         # Sao Miguel is hub
-        #main_routes.append(0)
-        #main_routes.append(l)
-
-        # Terceira is hub
-        main_routes.append(7)
+        main_routes.append(0)
         main_routes.append(l)
 
-#main_routes.append(0)    
-main_routes.append(7)
+        # Terceira is hub
+        #main_routes.append(7)
+        #main_routes.append(l)
+
+main_routes.append(0)    
+#main_routes.append(7)
 
 print(main_routes)
 time_counter = 0
