@@ -109,6 +109,14 @@ class MyTestCase(unittest.TestCase):
         ##Hand check
         cheaper_vehicles = [2,3]
         
+        ##Hand calc:
+        HC_obj_AC = 2*(0.01591941*30.80584*80 + 2*90.8901 + 80*9.108) 
+        HC_obj_AB = 2*(0.01591941*60.00833*80 + 2*90.8901 + 80*9.108) 
+        
+        HC_obj_tot = HC_obj_AB + HC_obj_AC
+        
+        self.assertAlmostEqual(azor_case_3.objective_value, HC_obj_tot, 3)
+        
         self.assertEqual(azor_case_3.aircrafts, cheaper_vehicles)
         
 if __name__ == '__main__':

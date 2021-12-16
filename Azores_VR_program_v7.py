@@ -166,8 +166,8 @@ class Azores_VR:
         self.AZmodel.addConstrs(gb.quicksum(self.q[i]*gb.quicksum(self.x_var[i,j,k] for j in self.nodes if i!= j) for i in self.nodes) <= self.Q[k] for k in self.vehicles)
         
         # flow of time
-        self.AZmodel.addConstrs(self.t_var[0,k] == 0 for k in self.vehicles  )
-        self.AZmodel.addConstrs((self.x_var[i,j,k] == 1 ) >>  (self.t_var[i,k] + self.times[i,j,k] == self.t_var[j,k]) for i in self.destinations for j in self.destinations for k in self.vehicles if i!=j)
+        # self.AZmodel.addConstrs(self.t_var[0,k] == 0 for k in self.vehicles  )
+        self.AZmodel.addConstrs((self.x_var[i,j,k] == 1 ) >>  (self.t_var[i,k] + self.times[i,j,k] <= self.t_var[j,k]) for i in self.destinations for j in self.destinations for k in self.vehicles if i!=j)
         
         # Not land at corvo
         
@@ -185,6 +185,8 @@ class Azores_VR:
         self.AZmodel.addConstrs(self.t_var[i,k] <= self.t_max[i] for i,k in self.arc_times)
     
     def get_solution(self):
+        # self.AZmodel.Params.MIPGap = 0.1
+        # self.AZmodel.setParam('MIPGap', 0.05)
         self.AZmodel.optimize()
         
         self.objective_value = self.AZmodel.ObjVal
