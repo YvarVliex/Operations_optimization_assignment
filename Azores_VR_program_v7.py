@@ -293,22 +293,29 @@ class Azores_VR:
         for r in range(len(self.time_accum)):
             for n in range(len(self.time_accum[r])):
                 i = self.routes[r][n]
+                if i == 3:
+                    self.textoffset = 0.2
+                else:
+                    self.textoffset = 0.1
                 plt.annotate('$q_{%d}=%d$ | $t_{%d}=%d$'%(i,self.q[i],i,
                     self.time_accum[r][n]),(self.X[i]-self.textoffset,
-                    self.Y[i]-self.textoffset))
+                    self.Y[i]-self.textoffset),fontsize=12)
                                             
             
             
         patch = [mpatches.Patch(color=self.colorchoice[n],label="vehicle "+
             str(self.aircrafts[n])+"|cap="+str(self.Q[self.aircrafts[n]])) for n 
             in range(len(self.aircrafts))]
-        plt.legend(handles=patch, loc='best')
+        plt.legend(handles=patch, loc='best',fontsize=12)
 
         
+        plt.xticks(fontsize=12)
+        plt.yticks(fontsize=12)
+        plt.grid(True)
 
-        plt.xlabel('Latitude $[\deg]$')
-        plt.ylabel('Longitude $[\deg]$')
-        plt.title("Vehicle Routing Problem Solution")
+        plt.xlabel('Latitude $[\deg]$',fontsize=18)
+        plt.ylabel('Longitude $[\deg]$',fontsize=18)
+        plt.title("Vehicle Routing Problem Solution",fontsize=22)
         plt.show()
     
         
