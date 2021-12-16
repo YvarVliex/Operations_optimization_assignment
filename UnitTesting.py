@@ -12,7 +12,7 @@ azor_test = Azores_VR(data_sheet, txt_file,min_landingdist, data_distance_cols, 
 
 
 class MyTestCase(unittest.TestCase):
-    
+    azor_test.get_all_req_val()
     # Test lengths of certain lists/dataframes/arrays
     def test_dataframe_lengths(self):
         self.assertAlmostEqual(len(azor_test.df_distance),9)
@@ -111,7 +111,7 @@ class MyTestCase(unittest.TestCase):
 
     # Test velocity of fleet
     def test_fleet_velicty(self):
-        azor_test.get_all_req_val()
+        
         self.assertAlmostEqual(azor_test.k_Vcr_dct[0], 535)
         self.assertAlmostEqual(azor_test.k_Vcr_dct[1], 535)
         self.assertAlmostEqual(azor_test.k_Vcr_dct[2], 667)
@@ -121,7 +121,7 @@ class MyTestCase(unittest.TestCase):
 
     # Test time arrays for the different aircraft
     def test_time_arrays(self):
-        azor_test.get_all_req_val()
+        
         self.assertAlmostEqual(len(azor_test.time_df_dct),6)
         # Test lengths of each of the aircraft time arrays
         for i in range(6):
@@ -143,7 +143,7 @@ class MyTestCase(unittest.TestCase):
 
     # Test if distances are correctly parsed (for usage in GUROBI Model) for all i,j combinations
     def test_distance_arc_vars(self):
-        azor_test.get_all_req_val()
+        
         self.assertAlmostEqual(len(azor_test.distances),72)
         for i in range(9):
             for j in range(9):
@@ -152,7 +152,7 @@ class MyTestCase(unittest.TestCase):
 
     # Test if times are correctly parsed (for usage in GUROBI Model) for all i,j,k combinations
     def test_times_arc_vars(self):
-        azor_test.get_all_req_val()
+        
         self.assertAlmostEqual(len(azor_test.times),432)
         for i in range(9):
             for j in range(9):
@@ -210,7 +210,8 @@ class MyTestCase(unittest.TestCase):
 
         # Add all costs together, run the AZmodel file and compare the values
         self.total_costs = self.fuelcost_Q200_total + self.fuelcost_Q400_total + self.TO_LA_cost_Q200_total + self.TO_LA_cost_Q400_total + self.PAX_cost_Q200_total + self.PAX_cost_Q400_total
-        azor_test.get_all_req_val()
+        
+        
         azor_test.initialise_model()
         azor_test.adding_constraints()
         azor_test.get_solution()

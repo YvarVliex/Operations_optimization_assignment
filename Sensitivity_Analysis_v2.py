@@ -14,6 +14,11 @@ import time
 from Azores_VR_program_v7 import Azores_VR
 import scipy.stats
 
+data_sheet = "Azores_Flight_Data_v4.xlsx"
+txt_file = "coordinates_airports.txt"
+data_distance_cols = "A:J"
+data_deliv_cols = "B,D:L"
+min_runway = 800
 
 def create_run_model(data_file, text_file, min_runway):
     """Creates a model from a given data_file and text_file, outputs the cost"""
@@ -28,6 +33,9 @@ def create_run_model(data_file, text_file, min_runway):
     time_diff = end_t-start_t
     objective = model.objective_value
     return model, objective, time_diff
+
+
+""" Change demand analysis"""
 
 
 def change_demand_set_amount(text_file, plot_route):
@@ -57,6 +65,9 @@ def change_demand_set_amount(text_file, plot_route):
     plt.grid()
     plt.xlabel('Percentage of original demand')
     plt.ylabel('Objective function value')
+    axes = plt.gca()
+    axes.xaxis.label.set_size(12)
+    axes.yaxis.label.set_size(12)
     plt.show()
 
     pearson_obj = scipy.stats.pearsonr(np.array(percentage_of_demand),np.array(results))
@@ -66,6 +77,9 @@ def change_demand_set_amount(text_file, plot_route):
     plt.grid()
     plt.xlabel('Percentage of original demand')
     plt.ylabel('Computational time [s]')
+    axes = plt.gca()
+    axes.xaxis.label.set_size(12)
+    axes.yaxis.label.set_size(12)
     plt.show()
 
     pearson_times = scipy.stats.pearsonr(np.array(percentage_of_demand), np.array(times))
@@ -75,20 +89,6 @@ def change_demand_set_amount(text_file, plot_route):
         for model in models:
             model.plot_end_map()
             plt.show()
-
-
-def upgrade_corvo(datafile, textfile, desired_runway_length):
-    """" Function to see the effect of upgrading the runway at Corvo so both plane types can land"""
-    start_t = time.time()
-    model = Azores_VR(datafile, textfile, desired_runway_length, data_distance_cols = "A:J", data_deliv_cols = "B,D:L", landingcorvoconstr = 'no')
-    model.get_all_req_val()
-    model.initialise_model()
-    model.adding_constraints()
-    model.get_solution()
-    end_t_woplot = time.time()
-    print(f"Runtime = {end_t_woplot - start_t}")
-    model.plot_trajectories_map()
-    plt.show()
 
 
 def change_single_demand(datafile, textfile, desired_runway_length, node_to, new_demand):
@@ -108,16 +108,133 @@ def change_single_demand(datafile, textfile, desired_runway_length, node_to, new
     model.plot_trajectories_map()
     plt.show()
 
-def change_cost(datafile, textfile, desired_runway_length, percentages):
+# vary the total demand and check the results
+# change_demand_set_amount(txt_file, False)
+
+# vary the demand of a specific island
+# change_single_demand(data_sheet, txt_file, 800, 8, 31)  # reduce demand of island that has the highest demand
+# change_single_demand(data_sheet, txt_file, 800, 2, 36)  # increase demand of island that has the lowest
+
+
+"""Change cost analysis"""
+
+
+def change_cost(datafile, textfile, desired_runway_length, percentage, type):
     model = Azores_VR(datafile, textfile, desired_runway_length, data_distance_cols = "A:J", data_deliv_cols = "B,D:L")
-    # print(model.df_cost.iloc[0,0])
-    row_length = 6
-    column_length = 3
+    amount_rows = 6
+    for i in range(amount_rows):
+        if type == 'land':
+            model.df_cost.iloc[i,0] = percentage*model.df_cost.iloc[i,0]
+        elif type == 'pass':
+            model.df_cost.iloc[i,3] = percentage * model.df_cost.iloc[i, 3]
+        elif type == 'fuel':
+            model.df_fleet.iloc[i,11] = percentage * model.df_fleet.iloc[i,11]
+    return model
+
+
+def create_cost_models(percentages):
+    land_cost_models = []
+    pass_cost_models = []
+    fuel_cost_models = []
     for percentage in percentages:
-        for i in range(row_length):
-            for j in range(column_length):
-                model.df_cost.iloc[i,j] = model.df_cost.iloc[i,j]*percentage
-    print(model.df_cost)
+        land_cost_models.append(change_cost(data_sheet, txt_file, min_runway, percentage, 'land'))
+        pass_cost_models.append(change_cost(data_sheet, txt_file, min_runway, percentage, 'pass'))
+        fuel_cost_models.append(change_cost(data_sheet, txt_file, min_runway, percentage, 'fuel'))
+    return land_cost_models, pass_cost_models, fuel_cost_models
+
+
+def compare_costs(land_models, pass_models, fuel_models, percentages):
+    percentage_list = [i*100 for i in percentages]
+    land_cost_times = []
+    land_cost_objectives = []
+    for model in land_models:
+        start_t = time.time()
+        model.get_all_req_val()
+        model.initialise_model()
+        model.adding_constraints()
+        model.get_solution()
+        end_t = time.time()
+        time_diff = end_t - start_t
+        objective = model.objective_value
+        land_cost_times.append(time_diff)
+        land_cost_objectives.append(objective)
+    pass_cost_times = []
+    pass_cost_objectives = []
+    for model in pass_models:
+        start_t = time.time()
+        model.get_all_req_val()
+        model.initialise_model()
+        model.adding_constraints()
+        model.get_solution()
+        end_t = time.time()
+        time_diff = end_t - start_t
+        objective = model.objective_value
+        pass_cost_times.append(time_diff)
+        pass_cost_objectives.append(objective)
+    fuel_cost_times = []
+    fuel_cost_objectives = []
+    for model in fuel_models:
+        start_t = time.time()
+        model.get_all_req_val()
+        model.initialise_model()
+        model.adding_constraints()
+        model.get_solution()
+        end_t = time.time()
+        time_diff = end_t - start_t
+        objective = model.objective_value
+        fuel_cost_times.append(time_diff)
+        fuel_cost_objectives.append(objective)
+    pearson_obj_land = scipy.stats.pearsonr(np.array(percentages), np.array(land_cost_objectives))
+    pearson_obj_pass = scipy.stats.pearsonr(np.array(percentages), np.array(pass_cost_objectives))
+    pearson_obj_fuel = scipy.stats.pearsonr(np.array(percentages), np.array(fuel_cost_objectives))
+    print(f'Pearson land objective is {pearson_obj_land[0]} with a p value of {pearson_obj_land[1]}')
+    print(f'Pearson pass objective is {pearson_obj_pass[0]} with a p value of {pearson_obj_pass[1]}')
+    print(f'Pearson fuel objective is {pearson_obj_fuel[0]} with a p value of {pearson_obj_fuel[1]}')
+    plt.scatter(percentage_list, land_cost_objectives, marker='o', label='Take-off/landing costs')
+    plt.scatter(percentage_list, pass_cost_objectives, marker='D', label='Passenger costs')
+    plt.scatter(percentage_list, fuel_cost_objectives, marker='s', label='Fuel costs')
+    plt.grid()
+    plt.xlabel('Percentage of original demand')
+    plt.ylabel('Objective function value')
+    plt.legend()
+    plt.show()
+    pearson_time_land = scipy.stats.pearsonr(np.array(percentages), np.array(land_cost_times))
+    pearson_time_pass = scipy.stats.pearsonr(np.array(percentages), np.array(pass_cost_times))
+    pearson_time_fuel = scipy.stats.pearsonr(np.array(percentages), np.array(fuel_cost_times))
+    print(f'Pearson land time is {pearson_time_land[0]} with a p value of {pearson_time_land[1]}')
+    print(f'Pearson pass time is {pearson_time_pass[0]} with a p value of {pearson_time_pass[1]}')
+    print(f'Pearson fuel time is {pearson_time_fuel[0]} with a p value of {pearson_time_fuel[1]}')
+    plt.scatter(percentage_list, land_cost_times, marker='o', label='Take-off/landing costs')
+    plt.scatter(percentage_list, pass_cost_times, marker='D', label='Passenger costs')
+    plt.scatter(percentage_list, fuel_cost_times, marker='s', label='Fuel costs')
+    plt.grid()
+    plt.xlabel('Percentage of original demand')
+    plt.ylabel('Computational time [s]')
+    plt.legend()
+    plt.show()
+
+
+"""Change Cost"""
+percentages = [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0, 1.1, 1.2, 1.3, 1.4, 1.5, 1.6, 1.7, 1.8, 1.9, 2.0]
+land, passenger, fuel = create_cost_models(percentages)
+compare_costs(land, passenger, fuel, percentages)
+
+
+"""Change Nodes analysis"""
+
+
+def upgrade_corvo(datafile, textfile, desired_runway_length):
+    """" Function to see the effect of upgrading the runway at Corvo so both plane types can land"""
+    start_t = time.time()
+    model = Azores_VR(datafile, textfile, desired_runway_length, data_distance_cols = "A:J", data_deliv_cols = "B,D:L", landingcorvoconstr = 'no')
+    model.get_all_req_val()
+    model.initialise_model()
+    model.adding_constraints()
+    model.get_solution()
+    end_t_woplot = time.time()
+    print(f"Runtime = {end_t_woplot - start_t}")
+    model.plot_trajectories_map()
+    plt.show()
 
 
 def remove_islands(datafile, textfile, min_runway_length, islands_to_remove):
@@ -174,23 +291,6 @@ def change_hub(datafile, textfile, min_runway_length, new_hub, data_distance_col
     print(f"Objective value = {model.objective_value}")
     plt.show()
 
-data_sheet = "Azores_Flight_Data_v4.xlsx"
-txt_file = "coordinates_airports.txt"
-data_distance_cols = "A:J"
-data_deliv_cols = "B,D:L"
-min_runway = 800
-
-
-"""Change Demand"""
-# vary the total demand and check the results
-# change_demand_set_amount(txt_file, False)
-
-# vary the demand of a specific island
-# change_single_demand(data_sheet, txt_file, 800, 8, 31)  # reduce demand of island that has the highest demand
-# change_single_demand(data_sheet, txt_file, 800, 2, 36)  # increase demand of island that has the lowest
-
-"""Change Cost"""
-change_cost(data_sheet, txt_file, min_runway, [0.1])
 
 """Change Nodes"""
 # upgrade runway of Corvo
