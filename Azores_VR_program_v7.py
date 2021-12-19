@@ -302,8 +302,7 @@ class Azores_VR:
                 plt.annotate('$q_{%d}=%d$ | $t_{%d}=%d$'%(i,self.q[i],i,
                     self.time_accum[r][n]),(self.X[i]-self.textoffset,
                     self.Y[i]-self.textoffset),fontsize=12)
-                                            
-            
+                                                                                       
             
         patch = [mpatches.Patch(color=self.colorchoice[n],label="vehicle "+
             str(self.aircrafts[n])+"|cap="+str(self.Q[self.aircrafts[n]])) for n 

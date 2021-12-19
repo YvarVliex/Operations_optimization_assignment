@@ -60,7 +60,7 @@ routes_nf = [3,12,11,7,3,46,4]
 # colorchoice = ['red', 'green', 'black', 'grey', 'skyblue', 'orange','gold']  
 
 
-mymap = matplotlib.colors.LinearSegmentedColormap.from_list('mycolors',['yellow','red'])
+mymap = matplotlib.colors.LinearSegmentedColormap.from_list('mycolors',['lime','blue'])
 Z = [[0,0],[0,0]]
 levels = range(0,max(routes_nf)+1,1)
 CS3 = plt.contourf(Z, levels, cmap=mymap)
@@ -73,16 +73,16 @@ for r in range(len(routes_ar)):
         j = routes_ar[r][n+1]
                
         p = (routes_nf[r]-min(routes_nf))/(max(routes_nf)-min(routes_nf))
-        r = 1
+        r = 0
         g = 1-p
-        b = 0
+        b = p
         plt.plot([X[i],X[j]],[Y[i],Y[j]], color=(r,g,b), zorder=0)
    
 
 plt.scatter(X, Y)#, label=airports)
 plt.gca().set_aspect('equal', adjustable='box')
 for i in range(len(df_coordinates)):
-    plt.annotate(f"$n_{i}$", (X[i], Y[i]), xytext = (X[i]-0.01, Y[i]-0.1))
+    plt.annotate(f"$n_{i}$", (X[i], Y[i]), xytext = (X[i]-0.01, Y[i]-0.1),fontsize=12)
     
 for r in range(len(routes_ar)):
     for n in range(len(routes_ar[r])-1):
@@ -92,14 +92,19 @@ for r in range(len(routes_ar)):
         middle_x = (X[j]-X[i])*0.5+X[i]
         middle_y = (Y[j]-Y[i])*0.5+Y[i]
         
-        plt.annotate(f"{routes_nf[r]}", (middle_x, middle_y), xytext = (middle_x+0.01, middle_y-0.04))
+        plt.annotate(f"{routes_nf[r]}", (middle_x, middle_y), xytext = (middle_x+0.01, middle_y-0.04),fontsize=12)
         
         
+plt.xticks(fontsize=12)
+plt.yticks(fontsize=12)
+plt.xlabel('Longitude [deg]',fontsize=18)
+plt.ylabel('Latitude [deg]',fontsize=18)
+plt.title('Flown Direct Flights',fontsize=22)
+cbar  = plt.colorbar(CS3)
 
-plt.xlabel('Longitude [deg]')
-plt.ylabel('Latitude [deg]')
-plt.title('Flown Direct Flights')
-plt.colorbar(CS3)
+for t in cbar.ax.get_yticklabels():
+    t.set_fontsize(12)
+    
 plt.grid()
 plt.show()
         
